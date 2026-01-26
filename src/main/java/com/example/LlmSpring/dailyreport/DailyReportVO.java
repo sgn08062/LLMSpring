@@ -3,6 +3,7 @@ package com.example.LlmSpring.dailyreport;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 public class DailyReportVO {
@@ -11,10 +12,11 @@ public class DailyReportVO {
     private String title;
     private String content;
     private String summary; //3줄 요약
-    private Boolean original_content; //true: 초안, false: 수정됨
+    private Boolean originalContent; //true: 초안, false: 수정됨
     private String status; //DRAFT(작성중), //PUBLISHED(발행됨)
     private Integer commitCount;
-    private LocalDate updatedAt;
+    private LocalDateTime updatedAt;
+    private String drFilePath;
     private Boolean isPublished;
     private Long projectId;
     private String userId;

@@ -11,6 +11,7 @@ public class DailyReportResponseDTO {
     private Long reportId;
     private String title;
     private String content;
+    private String summary;
     private String status;
     private String reportDate;
     private Integer commitCount;
@@ -25,10 +26,11 @@ public class DailyReportResponseDTO {
         this.reportId = vo.getReportId();
         this.title = vo.getTitle();
         this.content = vo.getContent();
+        this.summary = vo.getSummary();
         this.status = vo.getStatus();
         this.reportDate = vo.getReportDate().toString();
         this.commitCount = vo.getCommitCount();
-        this.isPublished = vo.getIsPublished();
+        this.isPublished = Boolean.TRUE.equals(vo.getIsPublished());
         this.writerName = writerName;
     }
 }
