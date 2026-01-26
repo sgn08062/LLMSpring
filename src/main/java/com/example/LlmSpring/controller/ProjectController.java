@@ -5,6 +5,7 @@ import com.example.LlmSpring.project.ProjectService;
 import com.example.LlmSpring.project.request.ProjectStatusRequestDTO;
 import com.example.LlmSpring.project.request.ProjectUpdateRequestDTO;
 import com.example.LlmSpring.project.ProjectVO;
+import com.example.LlmSpring.project.response.ProjectListResponseDTO;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -86,23 +87,19 @@ public class ProjectController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ProjectVO>> getProjectList(
+    public ResponseEntity<List<ProjectListResponseDTO>> getProjectList(
             @RequestParam(value = "type", defaultValue = "active") String type,
             @RequestParam("userId") String userId) { // 사용자가 참여중인 프로젝트 목록 조회
 
-        List<ProjectVO> list;
+        List<ProjectListResponseDTO> list;
 
-        
         if ("active".equals(type)) {
             list = projectService.getActiveProjects(userId);
-        }
-        else if ("done".equals(type)) {
+        } else if ("done".equals(type)) {
             list = projectService.getDoneProjects(userId);
-        }
-        else if ("trash".equals(type)) {
+        } else if ("trash".equals(type)) {
             list = projectService.getTrashProjects(userId);
-        }
-        else {
+        } else {
             list = new ArrayList<>();
         }
         return ResponseEntity.ok(list);

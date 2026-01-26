@@ -2,10 +2,12 @@ package com.example.LlmSpring.project;
 
 import com.example.LlmSpring.project.request.ProjectCreateRequestDTO;
 import com.example.LlmSpring.project.request.ProjectUpdateRequestDTO;
+import com.example.LlmSpring.project.response.ProjectListResponseDTO;
 import com.example.LlmSpring.projectMember.ProjectMemberVO;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -98,19 +100,41 @@ public class ProjectServiceImpl implements ProjectService {
         return projectMapper.deleteProject(projectId, deleteDate);
     }
 
-    @Override
-    public List<ProjectVO> getActiveProjects(String userId) { // 사용자가 참여중인 ACTIVE 상태의 프로젝트 목록 조회
-        return projectMapper.getActiveProjectList(userId);
+    // VO를 목록용 DTO로 변환하는 공통 메서드
+    private ProjectListResponseDTO convertToProjectListDTO(ProjectVO vo) {
+        return ProjectListResponseDTO.builder()
+                .projectId(vo.getProjectId())
+                .name(vo.getName())
+                .status(vo.getStatus())
+                .startDate(vo.getStartDate())
+                .endDate(vo.getEndDate())
+                .deletedAt(vo.getDeletedAt())
+                .build();
     }
 
     @Override
-    public List<ProjectVO> getDoneProjects(String userId) { // 사용자가 참여중인 DONE 상태의 프로젝트 목록 조회
-        return projectMapper.getDoneProjectList(userId);
+    public List<ProjectListResponseDTO> getActiveProjects(String userId) { // 사용자가 참여중인 ACTIVE 상태의 프로젝트 목록 조회
+
+        List<ProjectVO> voList = projectMapper.getActiveProjectList(userId);
+
+        // 2. DTO로 변환하여 반환
+        return voList.stream()
+                .map(this::convertToProjectListDTO)
+                .collect(Collectors.toList());
     }
 
     @Override
-    public List<ProjectVO> getTrashProjects(String userId) { // 사용자가 참여중인 삭제 예정의 프로젝트 목록 조회
-        return projectMapper.getTrashProjectList(userId);
+    public List<ProjectListResponseDTO> getDoneProjects(String userId) { // 사용자가 참여중인 DONE 상태의 프로젝트 목록 조회
+        return projectMapper.getDoneProjectList(userId).stream()
+                .map(this::convertToProjectListDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ProjectListResponseDTO> getTrashProjects(String userId) { // 사용자가 참여중인 삭제 예정의 프로젝트 목록 조회
+        return projectMapper.getTrashProjectList(userId).stream()
+                .map(this::convertToProjectListDTO)
+                .collect(Collectors.toList());
     }
 
     @Override

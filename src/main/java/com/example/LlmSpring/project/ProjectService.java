@@ -2,6 +2,7 @@ package com.example.LlmSpring.project;
 
 import com.example.LlmSpring.project.request.ProjectCreateRequestDTO;
 import com.example.LlmSpring.project.request.ProjectUpdateRequestDTO;
+import com.example.LlmSpring.project.response.ProjectListResponseDTO;
 import java.util.List;
 
 public interface ProjectService {
@@ -19,13 +20,13 @@ public interface ProjectService {
     int deleteProject(int projectId);
 
     // 사용자가 참여중인 프로젝트 목록 조회 (ACTIVE만)
-    List<ProjectVO> getActiveProjects(String userId);
+    List<ProjectListResponseDTO> getActiveProjects(String userId);
 
     // 사용자가 참여중인 프로젝트 목록 조회 (DONE만)
-    List<ProjectVO> getDoneProjects(String userId);
+    List<ProjectListResponseDTO> getDoneProjects(String userId);
 
     // 사용자가 참여중인 삭제 예정인 프로젝트 목록 조회
-    List<ProjectVO> getTrashProjects(String userId);
+    List<ProjectListResponseDTO> getTrashProjects(String userId);
 
     // 삭제 취소 기능 추가
     int restoreProject(int projectId, String userId);
