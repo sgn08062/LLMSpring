@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.llmspring.mapper.TaskMapper">
+
+    <insert id="insertTask" useGeneratedKeys="true" keyProperty="taskId">
+        INSERT INTO Task (project_id, user_id, title, content, status, priority, dueDate, branch)
+        VALUES (#{proejctId}, #{userId}, #{title}, #{content}, #{status}, #{priority}, #{dueDate}, #{branch})
+    </insert>
+
+    <select id="selectTasksByProjectId" resultType="com.example.llmspring.vo.TaskVO">
+        SELECT * FROM Task
+        WHERE project_id = #{projectId} AND deleted_at IS NULL
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectTaskById" resultType="com.example.LlmSpring.vo.TaskVO">
+        SELECT * FROM Task WHERE task_id = #{taskId} AND deleted_at IS NULL
+    </select>
+
+    <update id="updateTaskStatus">
+        UPDATE TASK SET status = #{status} WHERE task_id = #{taskId}
+    </update>
+
+    <update id="updateTask">
+        UPDATE Task
+        SET title = #{title}, content = #{content}, priority = #{priority},
+            branch = #{branch}, due_date = #{dueDate}, updated_at = NOW()
+        WHERE task_id = #{taskId}
+    </update>
+
+    <update id="softDeleteTask">
+        UPDATE Task SET deleted_at = NOW() WHERE task_id = #{taskId}
+    </update>
+
+    <insert id="insertTaskUser">
+        INSERT INTO TaskUser (task_id, user_id) VALUES (#{taskId}, #{userId})
+    </insert>
+
+    <select id="selectTaskUsers" resultType="String">
+        SELECT user_id FROM TaskUser WHERE task_id = #{taskId} AND deleted_at IS NULL
+    </select>
+
+    <select id="selectCheckLists" resultType="com.example.LlmSpring.vo.TaskCheckListVO">
+        SELECT * FROM TaskCheckList WHERE task_id = #{taskId}
+    </select>
+
+    <insert id="insertCheckList">
+        INSERT INTO TaskCheckList (task_id, content, status)
+        VALUES (#{taskId}, #{content}, false)
+    </insert>
+
+    <insert id="deleteCheckList">
+        DELETE FROM TaskCheckList WHERE checklist_id = #{checklistId}
+    </insert>
+
+    <update id="updateCheckListStatus">
+        UPDATE TaskCheckList SET status = #{isDone} WHERE checklist_id = #{checlistId}
+    </update>
+
+    <select id="selectChats" resultType="map">
+        SELECT * FROM TaskChat WHERE task_id = #{taskId} ORDER BY date ASC
+    </select>
+
+    <insert id="insertChat">
+        INSERT INTO TaskChat (task_id, user_id, content) VALUES  (#{taskId}, #{UserId}, #{content})
+    </insert>
+
+    <select id="selectLogs" resultType="map">
+        SELECT * FROM TaskLog WHERE task_id = #{taskId} ORDER BY created_at DESC
+    </select>
+
+</mapper>
