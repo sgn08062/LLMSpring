@@ -48,7 +48,7 @@ public class AuthService {
         String userId = req.getUserId();
         // 아이디가 없을 경우
         if(!userMapper.existsByUserId(userId)){
-            return LogInResponseDTO.fail("NO_USERID", "입력된 아이디가 없습니다.");
+            return LogInResponseDTO.fail();
         }
 
         String hashPw = userMapper.getHashPw(req.getUserId());
@@ -58,7 +58,7 @@ public class AuthService {
             return LogInResponseDTO.ok(userName, token);
         }else{
             // 비밀번호 오류
-            return LogInResponseDTO.fail("PASSWORD_ERROR", "비밀번호가 틀렸습니다");
+            return LogInResponseDTO.fail();
         }
     }
 }

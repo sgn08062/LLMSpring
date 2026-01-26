@@ -16,7 +16,7 @@ public class LogInResponseDTO {
         return new LogInResponseDTO(true,"SUCCESS_LOGIN",userName+"님 환영합니다!", userName, token);
     }
 
-    public static LogInResponseDTO fail(String code, String message){
-        return new LogInResponseDTO(false, code, message, null, null);
+    public static LogInResponseDTO fail(){
+        return new LogInResponseDTO(false, "FAIL_LOGIN", "아이디 또는 비밀번호가 틀렸습니다", null, null);
     }
 }
