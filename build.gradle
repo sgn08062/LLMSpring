@@ -25,17 +25,33 @@ repositories {
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
-	implementation 'org.springframework.boot:spring-boot-starter-security'
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation 'org.springframework.boot:spring-boot-starter-websocket'
+//	Core Web
+	implementation 'org.springframework.boot:spring-boot-starter-web' // Base
+	implementation 'org.springframework.boot:spring-boot-starter-websocket' // Chatting
+	implementation 'org.springframework.boot:spring-boot-starter-actuator' // Monitoring
+
+
+//	Database
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa' // JPA ORM
+	runtimeOnly 'com.mysql:mysql-connector-j' // MySQL Connection Driver
+	implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.3' // Mybatis
+	implementation 'org.bgee.log4jdbc-log4j2:log4jdbc-log4j2-jdbc4.1:1.16' // SQL Log
+
+
+//	Security & Auth
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client' // Github Auth
+	implementation 'org.springframework.boot:spring-boot-starter-security' // Security
+
+//	Utility
+	implementation 'org.springframework.boot:spring-boot-starter-aop' // AOP
+	developmentOnly 'org.springframework.boot:spring-boot-devtools' // Auto Reload
 	compileOnly 'org.projectlombok:lombok'
-	runtimeOnly 'com.mysql:mysql-connector-j'
-	annotationProcessor 'org.projectlombok:lombok'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testImplementation 'org.springframework.security:spring-security-test'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	annotationProcessor 'org.projectlombok:lombok' // lombok
+
+//	Testing
+	testImplementation 'org.springframework.boot:spring-boot-starter-test' // Java Test Tool
+	testImplementation 'org.springframework.security:spring-security-test' // Security Test Tool
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher' // Junit
 }
 
 tasks.named('test') {
