@@ -6,8 +6,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -43,15 +46,12 @@ public class DailyReportService {
 
     //2. 리포트 상세 조회
     public DailyReportResponseDTO getReportDetail(Long reportId) {
-        DailyReportVO vo= dailyReportMapper.selectReportById(reportId);
-        if(vo == null) throw new IllegalArgumentException("Report not found");
+        DailyReportVO vo = dailyReportMapper.selectReportById(reportId);
+        if (vo == null) throw new IllegalArgumentException("Report not found");
 
         DailyReportResponseDTO dto = convertToDTO(vo);
-
-        //채팅 로그
-        List<DailyReportChatLogVO> chatLogs = dailyReportMapper.selectChatLog(reportId);
+        List<DailyReportChatLogVO> chatLogs = dailyReportMapper.selectChatLogs(reportId);
         dto.setChatLogs(chatLogs);
-
         return dto;
     }
 
@@ -88,12 +88,11 @@ public class DailyReportService {
 
     //8. AI 채팅 기록 조회
     public List<Map<String, Object>> getChatLogs(Long reportId, int page, int size) {
-        // VO를 Map으로 변환하거나 별도 DTO 사용
         List<DailyReportChatLogVO> logs = dailyReportMapper.selectChatLogsPaging(reportId, page * size, size);
         List<Map<String, Object>> result = new ArrayList<>();
         for (DailyReportChatLogVO log : logs) {
             Map<String, Object> map = new HashMap<>();
-            map.put("role", log.getRole());
+            map.put("role", log.getRole()); // true:User, false:AI
             map.put("message", log.getMessage());
             result.add(map);
         }
@@ -101,17 +100,29 @@ public class DailyReportService {
     }
 
     //9. AI 채팅 전송
+    @Transactional
     public Map<String, Object> sendChatToAI(Long reportId, String message, String currentContent) {
-        // TODO: AI API 호출 로직
-        DailyReportChatLogVO log = new DailyReportChatLogVO();
-        log.setReportId(reportId);
-        log.setRole(true); // User
-        log.setMessage(message);
-        dailyReportMapper.insertChatLog(log);
+        //User 메시지 저장
+        DailyReportChatLogVO userLog = new DailyReportChatLogVO();
+        userLog.setReportId(reportId);
+        userLog.setRole(true); // User
+        userLog.setMessage(message);
+        dailyReportMapper.insertChatLog(userLog);
 
-        // Mock Response
+        // TODO: 실제 AI API 호출
+        String aiReplyText = "AI 응답입니다: " + message + "에 대한 피드백...";
+
+        //AI 메시지 저장 (이 부분이 빠져 있었습니다!)
+        DailyReportChatLogVO aiLog = new DailyReportChatLogVO();
+        aiLog.setReportId(reportId);
+        aiLog.setRole(false); // AI
+        aiLog.setMessage(aiReplyText);
+        aiLog.setIsApplied(false);
+        dailyReportMapper.insertChatLog(aiLog);
+
+        //응답 반환
         Map<String, Object> response = new HashMap<>();
-        response.put("reply", "AI 응답입니다.");
+        response.put("reply", aiReplyText);
         return response;
     }
 

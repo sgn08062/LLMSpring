@@ -15,7 +15,7 @@
             status, commit_count, is_published, original_content
         ) VALUES (
                      #{projectId}, #{userId}, #{reportDate}, #{title}, #{content},
-                     'DRAFT', #{commitCount}, false, true
+                     'DRAFT', #{commitCount}, false, #{originalContent}
                  )
     </insert>
 
@@ -27,6 +27,7 @@
         UPDATE DailyReport
         SET title = #{title},
             content = #{content},
+            original_content = #{originalContent},
             updated_at = NOW()
         WHERE report_id = #{reportId}
     </update>

@@ -12,6 +12,7 @@ public class DailyReportResponseDTO {
     private String title;
     private String content;
     private String summary;
+    private Boolean originalContent; //true: 초안, false: 수정됨
     private String status;
     private String reportDate;
     private Integer commitCount;
@@ -27,6 +28,7 @@ public class DailyReportResponseDTO {
         this.title = vo.getTitle();
         this.content = vo.getContent();
         this.summary = vo.getSummary();
+        this.originalContent = vo.getOriginalContent();
         this.status = vo.getStatus();
         this.reportDate = vo.getReportDate().toString();
         this.commitCount = vo.getCommitCount();
