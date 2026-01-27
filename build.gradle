@@ -26,27 +26,29 @@ repositories {
 
 dependencies {
 //	Core Web
-    implementation 'org.springframework.boot:spring-boot-starter-web' // Base
-    implementation 'org.springframework.boot:spring-boot-starter-websocket' // Chatting
-    implementation 'org.springframework.boot:spring-boot-starter-actuator' // Monitoring
+	implementation 'org.springframework.boot:spring-boot-starter-web' // Base
+	implementation 'org.springframework.boot:spring-boot-starter-websocket' // Chatting
+	implementation 'org.springframework.boot:spring-boot-starter-actuator' // Monitoring
 
 
 //	Database
-    runtimeOnly 'com.mysql:mysql-connector-j' // MySQL Connection Driver
-    implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.3' // Mybatis
-    implementation 'org.bgee.log4jdbc-log4j2:log4jdbc-log4j2-jdbc4.1:1.16' // SQL Log
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa' // JPA ORM
+	runtimeOnly 'com.mysql:mysql-connector-j' // MySQL Connection Driver
+	implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.3' // Mybatis
+	implementation 'org.bgee.log4jdbc-log4j2:log4jdbc-log4j2-jdbc4.1:1.16' // SQL Log
 
 
 //	Security & Auth
-    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client' // Github Auth
-    implementation 'com.auth0:java-jwt:4.4.0' // JWT
-    implementation 'org.mindrot:jbcrypt:0.4' // Bcrypt
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client' // Github Auth
+	implementation 'com.auth0:java-jwt:4.4.0' // JWT
+	implementation 'org.mindrot:jbcrypt:0.4' // Bcrypt
 
 //	Utility
-    implementation 'org.springframework.boot:spring-boot-starter-aop' // AOP
-    developmentOnly 'org.springframework.boot:spring-boot-devtools' // Auto Reload
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok' // lombok
+	implementation 'org.springframework.boot:spring-boot-starter-aop' // AOP
+	developmentOnly 'org.springframework.boot:spring-boot-devtools' // Auto Reload
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok' // lombok
+
 
 //	Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test' // Java Test Tool
