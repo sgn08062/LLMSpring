@@ -22,7 +22,7 @@ public class SecurityConfig {
 
                 // 3. 특정 URL 허용 (회원가입 등)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/error").permitAll() // 회원가입 경로는 누구나 접근 가능
+                        .requestMatchers("/api/**", "/error").permitAll() // 회원가입 경로는 누구나 접근 가능
                         .anyRequest().authenticated() // 그 외는 인증 필요 (나중에 JWT 등을 붙일 때 사용)
                 );
 

@@ -30,4 +30,10 @@
         SELECT name FROM User WHERE user_id = #{userId}
     </select>
 
+    <select id="getUserInfo" parameterType="string" resultType="UserVO">
+        SELECT user_id, name, email
+        FROM User
+        WHERE user_id = #{userId}
+    </select>
+
 </mapper>
