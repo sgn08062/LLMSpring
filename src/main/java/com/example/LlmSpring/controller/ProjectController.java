@@ -4,7 +4,6 @@ import com.example.LlmSpring.project.request.ProjectCreateRequestDTO;
 import com.example.LlmSpring.project.ProjectService;
 import com.example.LlmSpring.project.request.ProjectStatusRequestDTO;
 import com.example.LlmSpring.project.request.ProjectUpdateRequestDTO;
-import com.example.LlmSpring.project.ProjectVO;
 import com.example.LlmSpring.project.response.ProjectListResponseDTO;
 import java.util.ArrayList;
 import java.util.List;
