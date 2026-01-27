@@ -1,4 +1,4 @@
-package com.example.LlmSpring.SignUp;
+package com.example.LlmSpring.signUp;
 
 import lombok.Data;
 

@@ -1,12 +1,12 @@
-package com.example.LlmSpring.Auth;
+package com.example.LlmSpring.auth;
 
-import com.example.LlmSpring.LogIn.LogInResponseDTO;
-import com.example.LlmSpring.LogIn.LoginRequestDTO;
-import com.example.LlmSpring.SignUp.SignUpResponseDTO;
-import com.example.LlmSpring.SignUp.SignupRequestDTO;
-import com.example.LlmSpring.User.UserMapper;
-import com.example.LlmSpring.User.UserVO;
-import com.example.LlmSpring.Util.JWTService;
+import com.example.LlmSpring.logIn.LogInResponseDTO;
+import com.example.LlmSpring.logIn.LoginRequestDTO;
+import com.example.LlmSpring.signUp.SignUpResponseDTO;
+import com.example.LlmSpring.signUp.SignupRequestDTO;
+import com.example.LlmSpring.user.UserMapper;
+import com.example.LlmSpring.user.UserVO;
+import com.example.LlmSpring.util.JWTService;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

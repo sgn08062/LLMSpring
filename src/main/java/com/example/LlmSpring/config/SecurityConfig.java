@@ -1,4 +1,4 @@
-package com.example.LlmSpring.Config;
+package com.example.LlmSpring.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

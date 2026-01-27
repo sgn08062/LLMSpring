@@ -1,4 +1,4 @@
-package com.example.LlmSpring.User;
+package com.example.LlmSpring.user;
 
 import lombok.*;
 

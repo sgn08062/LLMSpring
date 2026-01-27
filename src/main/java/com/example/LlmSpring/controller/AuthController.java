@@ -1,10 +1,10 @@
-package com.example.LlmSpring.Controller;
+package com.example.LlmSpring.controller;
 
-import com.example.LlmSpring.LogIn.LogInResponseDTO;
-import com.example.LlmSpring.LogIn.LoginRequestDTO;
-import com.example.LlmSpring.SignUp.SignUpResponseDTO;
-import com.example.LlmSpring.SignUp.SignupRequestDTO;
-import com.example.LlmSpring.Auth.AuthService;
+import com.example.LlmSpring.logIn.LogInResponseDTO;
+import com.example.LlmSpring.logIn.LoginRequestDTO;
+import com.example.LlmSpring.signUp.SignUpResponseDTO;
+import com.example.LlmSpring.signUp.SignupRequestDTO;
+import com.example.LlmSpring.auth.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
