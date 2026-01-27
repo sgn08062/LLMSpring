@@ -11,13 +11,13 @@ public interface ProjectService {
     int createProject(ProjectCreateRequestDTO dto, String ownerId);
 
     // 프로젝트 수정 기능
-    int updateProject(int projectId, ProjectUpdateRequestDTO dto);
+    int updateProject(int projectId, String userId, ProjectUpdateRequestDTO dto);
 
     // 프로젝트 상태 수정 기능
-    int updateProjectStatus(int projectId, String status);
+    int updateProjectStatus(int projectId, String userId, String status);
 
     // 프로젝트 삭제
-    int deleteProject(int projectId);
+    int deleteProject(int projectId, String userId);
 
     // 사용자가 참여중인 프로젝트 목록 조회 (ACTIVE만)
     List<ProjectListResponseDTO> getActiveProjects(String userId);
