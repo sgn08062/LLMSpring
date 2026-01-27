@@ -81,8 +81,17 @@ public class ProjectServiceImpl implements ProjectService {
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int updateProject(int projectId, ProjectUpdateRequestDTO dto) { // 프로젝트 내용 수정
-        // 1. DTO 데이터를 VO 객체로 변환 (startDate 제외)
+    public int updateProject(int projectId, String userId, ProjectUpdateRequestDTO dto) { // 프로젝트 내용 수정
+
+        // 1. 권한 확인: 요청한 사용자가 해당 프로젝트의 OWNER인지 확인
+        // ProjectMapper의 getProjectRole을 사용하여 역할 정보를 가져옵니다.
+        String role = projectMapper.getProjectRole(projectId, userId);
+
+        if (!"OWNER".equals(role)) {
+            throw new RuntimeException("프로젝트 소유자(OWNER)만 정보를 수정할 수 있습니다.");
+        }
+
+        // 2. DTO 데이터를 VO 객체로 변환 (startDate 제외)
         ProjectVO project = ProjectVO.builder()
                 .projectId(projectId)
                 .name(dto.getName())
@@ -92,7 +101,7 @@ public class ProjectServiceImpl implements ProjectService {
                 .dailyReportTime(dto.getReportTime())
                 .build();
 
-        // 2. 수정 실행
+        // 3. 수정 실행
         return projectMapper.updateProject(project);
     }
 
@@ -101,7 +110,14 @@ public class ProjectServiceImpl implements ProjectService {
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int updateProjectStatus(int projectId, String status) { // 프로젝트 ACTIVE <-> DONE(아카이브) 상태 변경
+    public int updateProjectStatus(int projectId, String userId, String status) { // 프로젝트 ACTIVE <-> DONE(아카이브) 상태 변경
+
+        // 1. 권한 확인: OWNER 여부 검증
+        String role = projectMapper.getProjectRole(projectId, userId);
+        if (!"OWNER".equals(role)) {
+            throw new RuntimeException("프로젝트 소유자(OWNER)만 상태를 변경할 수 있습니다.");
+        }
+
         return projectMapper.updateProjectStatus(projectId, status);
     }
 
@@ -111,7 +127,14 @@ public class ProjectServiceImpl implements ProjectService {
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int deleteProject(int projectId) { // 프로젝트 soft_delete
+    public int deleteProject(int projectId, String userId) { // 프로젝트 soft_delete
+
+        // 1. 권한 확인: OWNER 여부 검증
+        String role = projectMapper.getProjectRole(projectId, userId);
+        if (!"OWNER".equals(role)) {
+            throw new RuntimeException("프로젝트 소유자(OWNER)만 프로젝트를 삭제할 수 있습니다.");
+        }
+
         // 현재 시간으로부터 7일 뒤의 시간을 계산하고 DB에 업데이트
         LocalDateTime deleteDate = LocalDateTime.now().plusDays(7);
 
@@ -187,7 +210,7 @@ public class ProjectServiceImpl implements ProjectService {
             throw new RuntimeException("삭제 대기 중인 프로젝트가 아닙니다.");
         }
 
-        // 도메인 규칙: deleted_at이 현재 날짜보다 큰 경우(미래)에만 취소 가능
+        // 도메인 규칙: 현재 시간이 삭제 예정 시간(deleted_at) 이전인 경우에만 복구 가능
         if (project.getDeletedAt().isBefore(LocalDateTime.now())) {
             throw new RuntimeException("삭제 유예 기간(7일)이 지나 복구할 수 없습니다.");
         }
