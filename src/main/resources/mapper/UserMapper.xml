@@ -31,15 +31,20 @@
     </select>
 
     <select id="getUserInfo" parameterType="string" resultType="UserVO">
-        SELECT user_id, name, email
+        SELECT *
         FROM User
         WHERE user_id = #{userId}
     </select>
 
-    <select id="getUserFullInfo" parameterType="string" resultType="UserVO">
-        SELECT name, user_id, email, reg_date, github_id
-        FROM User
+    <update id="updateGithubInfo" parameterType="com.example.LlmSpring.User.UserVO">
+        UPDATE User
+        SET github_id = #{githubId},
+            github_token = #{githubToken}
         WHERE user_id = #{userId}
+    </update>
+
+    <select id="findByEmail" parameterType="string" resultType="com.example.LlmSpring.User.UserVO">
+        SELECT * FROM User WHERE email = #{email}
     </select>
 
 </mapper>

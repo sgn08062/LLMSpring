@@ -10,7 +10,8 @@ public interface UserMapper {
 
     String getHashPw(String userId);
     String getUserName(String userId);
-
     UserVO getUserInfo(String userId);
-    UserVO getUserFullInfo(String userId);
+
+    void updateGithubInfo(UserVO userVO);
+    UserVO findByEmail(String email); // 비상용
 }

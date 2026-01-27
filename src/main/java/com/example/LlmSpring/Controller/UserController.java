@@ -44,7 +44,7 @@ public class UserController {
         System.out.println("사용자 모든 정보 받기 위해 진입");
 
         String userId = jwtService.verifyTokenAndUserId(token);
-        UserVO userVO = userService.getUserFullInfo(userId);
+        UserVO userVO = userService.getUserInfo(userId);
 
         if (userVO != null) {
             Map<String, Object> response = new HashMap<>();
