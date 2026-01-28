@@ -45,4 +45,7 @@ public interface ProjectMapper {
 
     // 10. 삭제 취소 실행 (deleted_at을 null로 변경)
     int restoreProject(@Param("projectId") int projectId);
+
+    // 11. 프로젝트 정보 조회
+    ProjectVO selectProjectById(@Param("projectId") Long projectId);
 }

@@ -142,4 +142,10 @@
         WHERE project_id = #{projectId}
     </update>
 
+    <!-- 11. 프로젝트 정보 조회   -->
+    <select id="selectProjectById" resultType="com.example.LlmSpring.project.ProjectVO">
+        SELECT *
+        FROM Project
+        WHERE project_id = #{projectId}
+    </select>
 </mapper>

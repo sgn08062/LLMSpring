@@ -12,14 +12,15 @@ import java.util.Map;
 @RequiredArgsConstructor
 @RequestMapping("/api/projects/{projectId}")
 @CrossOrigin(origins = "*")
-public class DailyReportController {
+public class ReportController {
 
     private final DailyReportService dailyReportService;
 
     //1. 리포트 작성 페이지 진입
     @PostMapping("/today")
     public DailyReportResponseDTO createOrGetTodayReport(@PathVariable Long projectId) {
-        String userId = "user1"; //실제 로그인 유저 ID 필요
+        String userId = "sgn08062"; //실제 로그인 유저 ID 필요
+        System.out.println("사용자 아이디: " + userId + " / 접속할 프로젝트 아이디: " + projectId);
         return dailyReportService.getOrCreateTodayReport(projectId, userId);
     }
 
