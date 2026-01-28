@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.LlmSpring.projectMember.ProjectMemberMapper">
+
+    <select id="existsActiveMember" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1
+            FROM ProjectMember
+            WHERE project_id = #{projectId}
+              AND user_id = #{userId}
+              AND deleted_at IS NULL
+        )
+    </select>
+
+    <select id="selectMemberListByProjectId" resultType="com.example.LlmSpring.projectMember.response.ProjectMemberResponseDTO">
+        SELECT
+            pm.user_id as userId,
+            u.name,
+            u.email,
+            u.file_path as filePath,
+            pm.role,
+            pm.status,
+            pm.joined_at as joinedAt
+        FROM ProjectMember pm
+                 INNER JOIN `User` u ON pm.user_id = u.user_id
+        WHERE pm.project_id = #{projectId}
+          AND pm.deleted_at IS NULL
+        ORDER BY CASE pm.role WHEN 'OWNER' THEN 1 WHEN 'ADMIN' THEN 2 ELSE 3 END, pm.joined_at ASC
+    </select>
+
+    <select id="getProjectRole" resultType="string">
+        SELECT role
+        FROM ProjectMember
+        WHERE project_id = #{projectId}
+          AND user_id = #{userId}
+          AND deleted_at IS NULL
+    </select>
+
+    <select id="isUserExists" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM `User`
+            WHERE user_id = #{userId} AND deleted_at IS NULL
+        )
+    </select>
+
+    <select id="selectMemberRaw" resultType="com.example.LlmSpring.projectMember.ProjectMemberVO">
+        SELECT project_id, user_id, role, status, joined_at, deleted_at
+        FROM ProjectMember
+        WHERE project_id = #{projectId} AND user_id = #{userId}
+    </select>
+
+    <insert id="insertMember">
+        INSERT INTO ProjectMember (project_id, user_id, role, status, joined_at)
+        VALUES (#{projectId}, #{userId}, 'MEMBER', 'INVITED', CURRENT_TIMESTAMP)
+    </insert>
+
+    <update id="updateMemberToInvited">
+        UPDATE ProjectMember
+        SET deleted_at = NULL,
+            status = 'INVITED',
+            role = 'MEMBER',
+            joined_at = CURRENT_TIMESTAMP
+        WHERE project_id = #{projectId} AND user_id = #{userId}
+    </update>
+
+    <update id="updateMemberRole">
+        UPDATE ProjectMember
+        SET role = #{role}
+        WHERE project_id = #{projectId}
+          AND user_id = #{userId}
+          AND deleted_at IS NULL
+    </update>
+
+    <update id="deleteMember">
+        UPDATE ProjectMember
+        SET deleted_at = #{deletedAt}
+        WHERE project_id = #{projectId}
+          AND user_id = #{userId}
+          AND deleted_at IS NULL
+    </update>
+
+</mapper>

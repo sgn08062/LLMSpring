@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.LlmSpring.project.ProjectMapper">
+
+    <!--  1. 프로젝트 기본 정보 삽입  -->
+    <insert id="insertProject" useGeneratedKeys="true" keyProperty="projectId">
+        INSERT INTO Project (
+            name,
+            description,
+            start_date,
+            end_date,
+            github_repo_url,
+            daily_report_time,
+            status
+        ) VALUES (
+                     #{name},
+                     #{description},
+                     #{startDate},
+                     #{endDate},
+                     #{githubRepoUrl},
+                     #{dailyReportTime},
+                     'ACTIVE'
+                 )
+    </insert>
+
+    <!--  1-2. 초기 멤버들 목록 삽입  -->
+    <insert id="insertProjectMembers">
+        INSERT INTO ProjectMember (project_id, user_id, role, status, joined_at)
+        VALUES
+        <foreach collection="members" item="m" separator=",">
+            (#{m.projectId}, #{m.userId}, #{m.role}, #{m.status}, #{m.joinedAt})
+        </foreach>
+    </insert>
+
+    <!-- 2. 프로젝트 수정  -->
+    <update id="updateProject">
+        UPDATE Project
+        SET name = #{name},
+            description = #{description},
+            github_repo_url = #{githubRepoUrl},
+            end_date = #{endDate},
+            daily_report_time = #{dailyReportTime},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE project_id = #{projectId}
+          AND deleted_at IS NULL
+          AND status = 'ACTIVE'
+    </update>
+
+    <!-- 3. 프로젝트 상태 수정   -->
+    <update id="updateProjectStatus">
+        UPDATE Project
+        SET status = #{status},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE project_id = #{projectId}
+          AND deleted_at IS NULL
+    </update>
+
+    <!-- 4. 프로젝트 삭제 (현재 기준 + 7일을 기록)-->
+    <update id="deleteProject">
+        UPDATE Project
+        SET deleted_at = #{deletedAt},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE project_id = #{projectId}
+          AND deleted_at IS NULL
+    </update>
+
+    <!-- 5. 사용자가 참여중인 (ACTIVE) 프로젝트 목록 조회   -->
+    <select id="getActiveProjectList" resultType="com.example.LlmSpring.project.ProjectVO">
+        SELECT
+            p.project_id,
+            p.name,
+            p.description,
+            p.start_date,
+            p.end_date,
+            p.github_repo_url,
+            p.daily_report_time,
+            p.status
+        FROM Project p
+                 INNER JOIN ProjectMember pm ON p.project_id = pm.project_id
+        WHERE pm.user_id = #{userId}
+          AND p.status = 'ACTIVE'      AND p.deleted_at IS NULL
+        ORDER BY p.project_id DESC
+    </select>
+
+    <!-- 6. 사용자가 참여중인 (DONE) 프로젝트 목록 조회   -->
+    <select id="getDoneProjectList" resultType="com.example.LlmSpring.project.ProjectVO">
+        SELECT
+            p.project_id,
+            p.name,
+            p.description,
+            p.start_date,
+            p.end_date,
+            p.github_repo_url,
+            p.daily_report_time,
+            p.status,
+            p.updated_at
+        FROM Project p
+                 INNER JOIN ProjectMember pm ON p.project_id = pm.project_id
+        WHERE pm.user_id = #{userId}
+          AND p.status = 'DONE'        AND p.deleted_at IS NULL
+        ORDER BY p.updated_at DESC
+    </select>
+
+    <!-- 6. 사용자가 참여중인 삭제 예정인 프로젝트 목록 조회   -->
+    <select id="getTrashProjectList" resultType="com.example.LlmSpring.project.ProjectVO">
+        SELECT
+            p.project_id,
+            p.name,
+            p.description,
+            p.start_date,
+            p.end_date,
+            p.status,
+            p.deleted_at  FROM Project p
+           INNER JOIN ProjectMember pm ON p.project_id = pm.project_id
+        WHERE pm.user_id = #{userId}
+          AND p.deleted_at IS NOT NULL  ORDER BY p.deleted_at DESC
+    </select>
+
+    <!-- 7. 프로젝트의 삭제 예정 시간을 가져오기   -->
+    <select id="selectProjectForRestore" resultType="com.example.LlmSpring.project.ProjectVO">
+        SELECT
+            project_id,
+            name,
+            deleted_at
+        FROM Project
+        WHERE project_id = #{projectId}
+    </select>
+
+    <!-- 8. ProjectMember 테이블에서 특정 유저의 역할을 문자열로 반환해서 요청자가 OWNER인지 대조   -->
+    <select id="getProjectRole" resultType="string">
+        SELECT role
+        FROM ProjectMember
+        WHERE project_id = #{projectId} AND user_id = #{userId}
+    </select>
+
+    <!-- 9.  deleted_at 컬럼을 다시 NULL로 업데이트  -->
+    <update id="restoreProject">
+        UPDATE Project
+        SET deleted_at = NULL
+        WHERE project_id = #{projectId}
+    </update>
+
+</mapper>

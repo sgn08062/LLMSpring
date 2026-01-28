@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.LlmSpring.dailyreport.DailyReportMapper">
+
+    <select id="selectReportByDate" resultType="com.example.LlmSpring.dailyreport.DailyReportVO">
+        SELECT * FROM DailyReport
+        WHERE project_id = #{projectId} AND user_id = #{userId} AND report_date = #{date}
+    </select>
+
+    <insert id="insertReport" useGeneratedKeys="true" keyProperty="reportId">
+        INSERT INTO DailyReport (
+            project_id, user_id, report_date, title, content,
+            status, commit_count, is_published, original_content
+        ) VALUES (
+                     #{projectId}, #{userId}, #{reportDate}, #{title}, #{content},
+                     'DRAFT', #{commitCount}, false, #{originalContent}
+                 )
+    </insert>
+
+    <select id="selectReportById" resultType="com.example.LlmSpring.dailyreport.DailyReportVO">
+        SELECT * FROM DailyReport WHERE report_id = #{reportId}
+    </select>
+
+    <update id="updateReport">
+        UPDATE DailyReport
+        SET title = #{title},
+            content = #{content},
+            original_content = #{originalContent},
+            updated_at = NOW()
+        WHERE report_id = #{reportId}
+    </update>
+
+    <update id="updateReportPublishStatus">
+        UPDATE DailyReport
+        SET is_published = true,
+            status = #{status},
+            updated_at = NOW()
+        WHERE report_id = #{reportId}
+    </update>
+
+    <select id="selectReportsByDate" resultType="com.example.LlmSpring.dailyreport.DailyReportVO">
+        SELECT * FROM DailyReport
+        WHERE project_id = #{projectId} AND report_date = #{date}
+    </select>
+
+    <select id="selectProjectStats" resultType="map">
+        SELECT
+            COUNT(*) as total_reports,
+            SUM(commit_count) as total_commits
+        FROM DailyReport
+        WHERE project_id = #{projectId}
+    </select>
+
+    <insert id="insertChatLog">
+        INSERT INTO DailyReportChatLog (role, message, report_id, suggestion_content, is_applied)
+        VALUES (#{role}, #{message}, #{reportId}, #{suggestionContent}, #{isApplied})
+    </insert>
+
+    <select id="selectChatLogs" resultType="com.example.LlmSpring.dailyreport.DailyReportChatLogVO">
+        SELECT * FROM DailyReportChatLog
+        WHERE report_id = #{reportId}
+        ORDER BY created_at ASC
+    </select>
+
+    <select id="selectChatLogsPaging" resultType="com.example.LlmSpring.dailyreport.DailyReportChatLogVO">
+        SELECT * FROM DailyReportChatLog
+        WHERE report_id = #{reportId}
+        ORDER BY created_at ASC
+            LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="selectUserName" resultType="String">
+        SELECT name FROM User WHERE user_id = #{userId}
+    </select>
+
+    <select id="selectReportSettings" resultType="map">
+        SELECT daily_report_time, github_default_branch
+        FROM Project
+        WHERE project_id = #{projectId}
+    </select>
+
+    <update id="updateReportSettings">
+        UPDATE Project
+        SET daily_report_time = #{settings.daily_report_time},
+            github_default_branch = #{settings.github_default_branch}
+        WHERE project_id = #{projectId}
+    </update>
+
+</mapper>
