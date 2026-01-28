@@ -63,9 +63,10 @@ public class UserController {
     }
 
     @GetMapping("/info")
-    public ResponseEntity<?> getUserInfo(@RequestParam String token){
+    public ResponseEntity<?> getUserInfo(@RequestHeader("Authorization") String authHeader){
         System.out.println("사용자 정보 받기 위해 진입");
         // jwt 검증하고 사용자id 반환
+        String token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
         String userId = jwtService.verifyTokenAndUserId(token);
         UserVO userVO = userService.getUserInfo(userId);
 
@@ -83,9 +84,10 @@ public class UserController {
     }
 
     @GetMapping("/fullInfo")
-    public ResponseEntity<?> getUserFullInfo(@RequestParam String token){
+    public ResponseEntity<?> getUserFullInfo(@RequestHeader("Authorization") String authHeader){
         System.out.println("사용자 모든 정보 받기 위해 진입");
 
+        String token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
         String userId = jwtService.verifyTokenAndUserId(token);
         UserVO userVO = userService.getUserInfo(userId);
 
