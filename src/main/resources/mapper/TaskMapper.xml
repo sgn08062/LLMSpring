@@ -5,19 +5,12 @@
 <mapper namespace="com.example.LlmSpring.task.TaskMapper">
 
     <insert id="insertTask" useGeneratedKeys="true" keyProperty="taskId">
-        INSERT INTO Task (
-            project_id, user_id, title, content, status,
-            priority, due_date, branch
-        ) VALUES (
-                     #{projectId}, #{userId}, #{title}, #{content}, #{status},
-                     #{priority}, #{dueDate}, #{branch}
-                 )
+        INSERT INTO Task (project_id, user_id, title, content, status, priority, due_date, branch)
+        VALUES (#{projectId}, #{userId}, #{title}, #{content}, #{status}, #{priority}, #{dueDate}, #{branch})
     </insert>
 
     <select id="selectTasksByProjectId" resultType="com.example.LlmSpring.task.TaskVO">
-        SELECT * FROM Task
-        WHERE project_id = #{projectId} AND deleted_at IS NULL
-        ORDER BY created_at DESC
+        SELECT * FROM Task WHERE project_id = #{projectId} AND deleted_at IS NULL ORDER BY created_at DESC
     </select>
 
     <select id="selectTaskById" resultType="com.example.LlmSpring.task.TaskVO">
@@ -30,12 +23,7 @@
 
     <update id="updateTask">
         UPDATE Task
-        SET title = #{title},
-            content = #{content},
-            priority = #{priority},
-            branch = #{branch},
-            due_date = #{dueDate},
-            updated_at = NOW()
+        SET title = #{title}, content = #{content}, priority = #{priority}, branch = #{branch}, due_date = #{dueDate}, updated_at = NOW()
         WHERE task_id = #{taskId}
     </update>
 
@@ -56,19 +44,12 @@
     </delete>
 
     <select id="selectCheckLists" resultType="com.example.LlmSpring.task.TaskCheckListVO">
-        SELECT
-            checklist_id AS checkListId,
-            content,
-            status,
-            created_at AS createAt,
-            task_id AS taskId
-        FROM TaskCheckList
-        WHERE task_id = #{taskId}
+        SELECT checklist_id AS checkListId, content, status, created_at AS createAt, task_id AS taskId
+        FROM TaskCheckList WHERE task_id = #{taskId}
     </select>
 
     <insert id="insertCheckList">
-        INSERT INTO TaskCheckList (task_id, content, status)
-        VALUES (#{taskId}, #{content}, false)
+        INSERT INTO TaskCheckList (task_id, content, status) VALUES (#{taskId}, #{content}, false)
     </insert>
 
     <delete id="deleteCheckList">
@@ -84,8 +65,12 @@
     </select>
 
     <insert id="insertChat">
-        INSERT INTO TaskChat (task_id, user_id, content)
-        VALUES (#{taskId}, #{userId}, #{content})
+        INSERT INTO TaskChat (task_id, user_id, content) VALUES (#{taskId}, #{userId}, #{content})
+    </insert>
+
+    <insert id="insertTaskLog">
+        INSERT INTO TaskLog (task_id, type, content, user_id)
+        VALUES (#{taskId}, #{type}, #{content}, #{userId})
     </insert>
 
     <select id="selectLogs" resultType="map">

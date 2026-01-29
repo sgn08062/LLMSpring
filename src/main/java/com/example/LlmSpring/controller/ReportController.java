@@ -2,7 +2,10 @@ package com.example.LlmSpring.controller;
 
 import com.example.LlmSpring.dailyreport.DailyReportService;
 import com.example.LlmSpring.dailyreport.response.DailyReportResponseDTO;
+import com.example.LlmSpring.util.JWTService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,19 +18,29 @@ import java.util.Map;
 public class ReportController {
 
     private final DailyReportService dailyReportService;
+    private final JWTService jwtService;
+
+    private String getUserId(String authHeader) {
+        String token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
+        return jwtService.verifyTokenAndUserId(token);
+    }
 
     //1. 리포트 작성 페이지 진입
     @PostMapping("/today")
-    public DailyReportResponseDTO createOrGetTodayReport(@PathVariable Long projectId) {
-        String userId = "sgn08062"; //실제 로그인 유저 ID 필요
-        System.out.println("사용자 아이디: " + userId + " / 접속할 프로젝트 아이디: " + projectId);
-        return dailyReportService.getOrCreateTodayReport(projectId, userId);
+    public ResponseEntity<DailyReportResponseDTO> createOrGetTodayReport(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long projectId) {
+
+        String userId = getUserId(authHeader);
+        if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        return ResponseEntity.ok(dailyReportService.getOrCreateTodayReport(projectId, userId));
     }
 
     //2. 리포트 상세 조회
     @GetMapping("/{reportId}")
-    public DailyReportResponseDTO getReport (@PathVariable Long projectId, @PathVariable Long reportId){
-        return dailyReportService.getReportDetail(reportId);
+    public ResponseEntity<DailyReportResponseDTO> getReport(@PathVariable Long projectId, @PathVariable Long reportId) {
+        return ResponseEntity.ok(dailyReportService.getReportDetail(reportId));
     }
 
     //3. 리포트 수정 (임시 저장)

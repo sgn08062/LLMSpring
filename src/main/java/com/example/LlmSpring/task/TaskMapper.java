@@ -2,8 +2,6 @@ package com.example.LlmSpring.task;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.springframework.scheduling.config.Task;
-
 import java.util.List;
 import java.util.Map;
 
@@ -11,13 +9,13 @@ import java.util.Map;
 public interface TaskMapper {
     // 업무
     void insertTask(TaskVO taskVO);
-    List<TaskVO>  selectTasksByProjectId(Long projectId);
+    List<TaskVO> selectTasksByProjectId(Long projectId);
     TaskVO selectTaskById(Long taskId);
     void updateTaskStatus(@Param("taskId") Long taskId, @Param("status") String status);
     void updateTask(TaskVO taskVO);
     void softDeleteTask(Long taskId);
 
-    // 담당자 (TaskUser)
+    // 담당자
     void insertTaskUser(@Param("taskId") Long taskId, @Param("userId") String userId);
     List<String> selectTaskUsers(Long taskId);
     void deleteTaskUsers(Long taskId);
@@ -31,5 +29,8 @@ public interface TaskMapper {
     // 채팅 & 로그
     List<Map<String, Object>> selectChats(Long taskId);
     void insertChat(@Param("taskId") Long taskId, @Param("userId") String userId, @Param("content") String content);
-    List<Map<String, Object>> selectsLogs(Long taskId);
+
+    // 로그 삽입
+    void insertTaskLog(@Param("taskId") Long taskId, @Param("type") String type, @Param("content") String content, @Param("userId") String userId);
+    List<Map<String, Object>> selectLogs(Long taskId);
 }

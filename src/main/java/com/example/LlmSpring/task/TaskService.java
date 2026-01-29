@@ -18,7 +18,7 @@ public class TaskService {
 
     //1. 업무 생성
     @Transactional
-    public void createTask(Long projectId, TaskRequestDTO requestDTO) {
+    public void createTask(Long projectId, String userId, TaskRequestDTO requestDTO) {
         TaskVO vo = new TaskVO();
         vo.setProjectId(projectId);
         vo.setTitle(requestDTO.getTitle());
@@ -33,10 +33,13 @@ public class TaskService {
 
         //담당자 저장
         if (requestDTO.getAssigneeIds() != null) {
-            for (String userId : requestDTO.getAssigneeIds()) {
-                taskMapper.insertTaskUser(vo.getTaskId(), userId);
+            for (String assigneeId : requestDTO.getAssigneeIds()) {
+                taskMapper.insertTaskUser(vo.getTaskId(), assigneeId);
             }
         }
+
+        //로그 기록
+        insertLog(vo.getTaskId(), "Create", "업무 생성", userId);
     }
 
     //2. 업무 목록 조회
@@ -62,13 +65,14 @@ public class TaskService {
 
     //4. 상태 변경
     @Transactional
-    public void updateStatus(Long taskId, String status) {
+    public void updateStatus(Long taskId, String userId, String status) {
         taskMapper.updateTaskStatus(taskId, status);
+        insertLog(taskId, "STATUS", "상태 변경: " + status, userId);
     }
 
     //5. 업무 수정
     @Transactional
-    public void updateTask(Long taskId, TaskRequestDTO requestDTO) {
+    public void updateTask(Long taskId, String userId, TaskRequestDTO requestDTO) {
         TaskVO vo = new TaskVO();
         vo.setTaskId(taskId);
         vo.setTitle(requestDTO.getTitle());
@@ -78,10 +82,11 @@ public class TaskService {
         vo.setDueDate(requestDTO.getDueDate());
         taskMapper.updateTask(vo);
 
+        //담당자 갱신
         if (requestDTO.getAssigneeIds() != null) {
             taskMapper.deleteTaskUsers(taskId);
-            for (String userId : requestDTO.getAssigneeIds()) {
-                taskMapper.insertTaskUser(taskId, userId);
+            for (String assigneeId : requestDTO.getAssigneeIds()) {
+                taskMapper.insertTaskUser(taskId, assigneeId);
             }
         }
     }
@@ -117,12 +122,15 @@ public class TaskService {
         return taskMapper.selectChats(taskId);
     }
 
-    public void addChat(Long taskId, String content) {
-        String userId = "user1";
+    public void addChat(Long taskId, String userId, String content) {
         taskMapper.insertChat(taskId, userId, content);
     }
 
     public List<Map<String, Object>> getLogs(Long taskId) {
-        return taskMapper.selectsLogs(taskId);
+        return taskMapper.selectLogs(taskId);
+    }
+
+    private void insertLog(Long taskId, String type, String content, String userId) {
+        taskMapper.insertTaskLog(taskId, type, content, userId);
     }
 }

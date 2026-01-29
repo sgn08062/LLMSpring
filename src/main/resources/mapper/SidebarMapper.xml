@@ -4,11 +4,10 @@
 
 <mapper namespace="com.example.LlmSpring.sidebar.SidebarMapper">
 
-    <select id="selectMySidebarProjects" resultType="com.example.LlmSpring.sidebar.response.SidebarResponseDTO$SidebarProjectDTO">
+    <select id="selectMySidebarProject" resultType="com.example.LlmSpring.sidebar.response.SidebarResponseDTO$SidebarProjectDTO">
         SELECT
             p.project_id AS projectId,
             p.name AS name,
-            -- 즐겨찾기 테이블에 있으면 1(true), 없으면 0(false)
             CASE WHEN pf.favorite_id IS NOT NULL THEN 1 ELSE 0 END AS isFavorite
         FROM Project p
                  JOIN ProjectMember pm ON p.project_id = pm.project_id
@@ -16,24 +15,19 @@
         WHERE pm.user_id = #{userId}
           AND p.deleted_at IS NULL
           AND pm.deleted_at IS NULL
-        ORDER BY p.name ASC
+          AND p.status = 'ACTIVE'
+        ORDER BY isFavorite DESC, p.name ASC
     </select>
 
     <select id="selectProjectInfo" resultType="map">
-        SELECT
-            name,
-            status,
-            daily_report_time AS dailyReportTime
+        SELECT name, status, daily_report_time AS dailyReportTime
         FROM Project
         WHERE project_id = #{projectId}
     </select>
 
     <select id="countTodayMyReport" resultType="int">
-        SELECT COUNT(*)
-        FROM DailyReport
-        WHERE project_id = #{projectId}
-          AND user_id = #{userId}
-          AND report_date = #{date}
+        SELECT COUNT(*) FROM DailyReport
+        WHERE project_id = #{projectId} AND user_id = #{userId} AND report_date = #{date}
     </select>
 
     <select id="selectMyActiveTasks" resultType="com.example.LlmSpring.sidebar.response.ProjectSidebarResponseDTO$SidebarTaskDTO">
@@ -50,5 +44,4 @@
         ORDER BY t.priority DESC, t.due_date ASC
             LIMIT 5
     </select>
-
 </mapper>

@@ -1,6 +1,9 @@
 package com.example.LlmSpring.sidebar.response;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,8 +17,11 @@ public class SidebarResponseDTO {
     private List<SidebarProjectDTO> projects = new ArrayList<>();
 
     @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class SidebarProjectDTO {
-        private Long projectId;
+        private Integer projectId;
         private String name;
         private boolean isFavorite;
     }
