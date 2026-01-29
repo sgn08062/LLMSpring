@@ -54,6 +54,8 @@ public class ProjectController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않거나 만료된 토큰입니다.");
         }
 
+        System.out.println(dto.toString());
+
         // 서비스 호출을 통해 프로젝트 생성 로직 실행
         int projectId = projectService.createProject(dto, userId);
 
