@@ -101,6 +101,7 @@ public class UserController {
             response.put("email", userVO.getEmail());
             response.put("regDate",  userVO.getRegDate());
             response.put("githubId", userVO.getGithubId());
+            response.put("filePath", userVO.getFilePath());
 
             return ResponseEntity.ok(response);
         }else{
