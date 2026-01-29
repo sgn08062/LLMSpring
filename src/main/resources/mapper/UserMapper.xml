@@ -60,7 +60,7 @@
         SELECT
             user_id,
             name,
-            email
+            file_path
         FROM User
         WHERE ( /* 1. ID 또는 이름에 검색어가 포함된 경우 (Partial Match) */
             user_id LIKE CONCAT('%', #{keyword}, '%')
