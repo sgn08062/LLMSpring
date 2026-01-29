@@ -13,5 +13,5 @@ import lombok.Data;
 public class UserSearchResponseDTO {
     private String userId; // 유저 식별자 (초대 리스트에 담길 핵심 ID)
     private String name;   // 화면 표시용 이름
-    private String email;  // 동일 이름 사용자 구분용 이메일
+    private String filePath;
 }

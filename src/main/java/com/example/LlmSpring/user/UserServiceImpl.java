@@ -31,7 +31,7 @@ public class UserServiceImpl implements UserService {
                 .map(vo -> UserSearchResponseDTO.builder()
                         .userId(vo.getUserId())
                         .name(vo.getName())
-                        .email(vo.getEmail())
+                        .filePath(vo.getFilePath())
                         .build())
                 .collect(Collectors.toList());
     }
