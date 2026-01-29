@@ -4,6 +4,7 @@ import com.example.LlmSpring.user.UserVO;
 import com.example.LlmSpring.user.UserService;
 import com.example.LlmSpring.user.response.UserSearchResponseDTO;
 import com.example.LlmSpring.util.JWTService;
+import com.example.LlmSpring.util.S3Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -76,6 +78,7 @@ public class UserController {
             response.put("userId", userVO.getUserId());
             response.put("name", userVO.getName());
             response.put("email", userVO.getEmail());
+            response.put("filePath", userVO.getFilePath());
 
             return ResponseEntity.ok(response);
         } else {
@@ -102,6 +105,29 @@ public class UserController {
             return ResponseEntity.ok(response);
         }else{
             return ResponseEntity.status(404).body("User not found");
+        }
+    }
+
+    @PostMapping("/profile")
+    public ResponseEntity<?> updateProfile(
+            @RequestHeader("Authorization") String authHeader,
+            @RequestPart(value="file", required=false) MultipartFile file,
+            @RequestPart(value = "nickname") String nickname
+    ){
+        System.out.println("프로필 수정 맵핑");
+        try{
+            String token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
+            String userId = jwtService.verifyTokenAndUserId(token);
+
+            if(userId == null){
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid Token");
+            }
+
+            userService.updateProfile(userId, nickname, file);
+            return ResponseEntity.ok("프로필이 수정되었습니다");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("프로필 수정 실패: " + e.getMessage());
         }
     }
 }

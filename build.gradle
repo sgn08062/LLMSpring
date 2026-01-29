@@ -43,6 +43,9 @@ dependencies {
 	implementation 'com.auth0:java-jwt:4.4.0' // JWT
 	implementation 'org.mindrot:jbcrypt:0.4' // Bcrypt
 
+// AWS
+    implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:3.1.0'
+
 //	Utility
 	implementation 'org.springframework.boot:spring-boot-starter-aop' // AOP
 	developmentOnly 'org.springframework.boot:spring-boot-devtools' // Auto Reload

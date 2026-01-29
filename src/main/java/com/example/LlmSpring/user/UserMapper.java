@@ -18,6 +18,8 @@ public interface UserMapper {
     void updateGithubInfo(UserVO userVO);
     UserVO findByEmail(String email); // 비상용
 
+    void updateProfile(UserVO userVO);
+
     /**
      * 키워드(ID 또는 이름)를 통한 유저 검색
      * @param keyword 검색어 (ID 또는 이름의 일부)

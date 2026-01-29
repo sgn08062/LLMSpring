@@ -47,6 +47,14 @@
         SELECT * FROM User WHERE email = #{email}
     </select>
 
+    <update id="updateProfile" parameterType="com.example.LlmSpring.user.UserVO">
+        UPDATE User
+        SET name = #{name}
+        <if test="filePath != null">
+            , file_path = #{filePath}
+        </if>
+        WHERE user_id = #{userId}
+    </update>
     <!-- 1. 본인과 삭제된 유저를 제외한 나머지 유저 검색   -->
     <select id="searchUsers" resultType="com.example.LlmSpring.user.UserVO">
         SELECT
