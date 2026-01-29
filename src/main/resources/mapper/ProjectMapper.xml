@@ -142,4 +142,17 @@
         WHERE project_id = #{projectId}
     </update>
 
+    <!-- 10. 특정 프로젝트 내에서 ACTIVE 상태이며 삭제되지 않은 멤버의 수를 반환 -->
+    <select id="countActiveProjectMembers" resultType="int">
+        SELECT COUNT(*)
+        FROM ProjectMember
+        WHERE project_id = #{projectId}
+        AND user_id IN
+        <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+            #{userId}
+        </foreach>
+        AND status = 'ACTIVE'
+        AND deleted_at IS NULL
+    </select>
+
 </mapper>

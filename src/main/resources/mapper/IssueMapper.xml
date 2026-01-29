@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.LlmSpring.issue.IssueMapper">
+
+    <insert id="insertIssue" useGeneratedKeys="true" keyProperty="issueId">
+        INSERT INTO Issue (
+            project_id, title, description, status, priority, due_date, created_by
+        ) VALUES (
+                     #{projectId}, #{title}, #{description}, #{status}, #{priority}, #{dueDate}, #{createdBy}
+                 )
+    </insert>
+
+    <insert id="insertIssueAssignees">
+        INSERT INTO Issue_Assignee (issue_id, project_id, user_id)
+        VALUES
+        <foreach collection="assignees" item="a" separator=",">
+            (#{a.issueId}, #{a.projectId}, #{a.userId})
+        </foreach>
+    </insert>
+
+    <select id="selectIssueById" resultType="com.example.LlmSpring.issue.IssueVO">
+        SELECT
+            issue_id, project_id, title, description, status,
+            priority, due_date, created_by, created_at, archived_at
+        FROM Issue
+        WHERE issue_id = #{issueId}
+    </select>
+
+    <update id="updateIssueArchived">
+        UPDATE Issue
+        SET archived_at = CURRENT_TIMESTAMP
+        WHERE issue_id = #{issueId}
+          AND archived_at IS NULL
+    </update>
+
+    <select id="countAssignee" resultType="int">
+        SELECT COUNT(*)
+        FROM Issue_Assignee
+        WHERE issue_id = #{issueId} AND user_id = #{userId}
+    </select>
+
+    <update id="updateIssueStatus">
+        UPDATE Issue
+        SET status = #{status}
+        WHERE issue_id = #{issueId}
+    </update>
+
+    <insert id="insertSingleAssignee">
+        INSERT INTO Issue_Assignee (issue_id, project_id, user_id)
+        VALUES (#{issueId}, #{projectId}, #{userId})
+    </insert>
+
+    <select id="countAssigneesByIssueId" resultType="int">
+        SELECT COUNT(*)
+        FROM Issue_Assignee
+        WHERE issue_id = #{issueId}
+    </select>
+
+    <delete id="deleteAssignee">
+        DELETE FROM Issue_Assignee
+        WHERE issue_id = #{issueId}
+          AND user_id = #{userId}
+    </delete>
+
+    <update id="updateIssuePartial">
+        UPDATE Issue
+        <set>
+            <if test="title != null">title = #{title},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="priority != null">priority = #{priority},</if>
+            <if test="dueDate != null">due_date = #{dueDate},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="status == 'DONE'">finished_at = CURRENT_TIMESTAMP,</if>
+            <if test="status != null and status != 'DONE'">finished_at = NULL,</if>
+        </set>
+        WHERE issue_id = #{issueId}
+        AND archived_at IS NULL
+    </update>
+
+    <resultMap id="IssueListResponseMap" type="com.example.LlmSpring.issue.response.IssueListResponseDTO">
+        <id property="issueId" column="issue_id"/>
+        <result property="title" column="title"/>
+        <result property="status" column="status"/>
+        <result property="priority" column="priority"/>
+        <result property="dueDate" column="due_date"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="createdAt" column="created_at"/>
+        <collection property="assignees" ofType="string" javaType="list">
+            <result column="assignee_user_id"/>
+        </collection>
+    </resultMap>
+
+    <select id="selectIssueList" resultMap="IssueListResponseMap">
+        SELECT
+        i.issue_id,
+        i.title,
+        i.status,
+        i.priority,
+        i.due_date,
+        i.created_by,
+        i.created_at,
+        ia.user_id AS assignee_user_id
+        FROM Issue i
+        LEFT JOIN Issue_Assignee ia ON i.issue_id = ia.issue_id
+        <where>
+            i.project_id = #{projectId}
+            AND i.archived_at IS NULL
+            <if test="status != null and status != ''">
+                AND i.status = #{status}
+            </if>
+            <if test="priority != null">
+                AND i.priority = #{priority}
+            </if>
+            <if test="assigneeId != null and assigneeId != ''">
+                AND EXISTS (
+                SELECT 1 FROM Issue_Assignee sub_ia
+                WHERE sub_ia.issue_id = i.issue_id AND sub_ia.user_id = #{assigneeId}
+                )
+            </if>
+        </where>
+        ORDER BY
+        <choose>
+            <when test="sortColumn == 'priority'">i.priority ${sortDirection}, i.created_at DESC</when>
+            <otherwise>i.created_at ${sortDirection}</otherwise>
+        </choose>
+    </select>
+
+    <select id="selectAssigneeDetailsByIssueId" resultType="com.example.LlmSpring.issue.response.IssueDetailResponseDTO$AssigneeInfoDTO">
+        SELECT
+            ia.user_id as userId,
+            u.name as userName
+        FROM Issue_Assignee ia
+                 JOIN User u ON ia.user_id = u.user_id
+        WHERE ia.issue_id = #{issueId}
+    </select>
+
+</mapper>

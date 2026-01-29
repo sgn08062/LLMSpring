@@ -21,7 +21,7 @@ public class ProjectServiceImpl implements ProjectService {
     /**
      * 프로젝트 생성 및 멤버 초기화
      * 1. 프로젝트 정보를 생성합니다.
-     * 2. 생성자를 해당 프로젝트의 'OWNER' 및 'JOINED' 상태로 등록합니다.
+     * 2. 생성자를 해당 프로젝트의 'OWNER' 및 'ACTIVE' 상태로 등록합니다.
      * 3. 초대된 멤버들을 'MEMBER' 및 'INVITED' 상태로 일괄 등록합니다.
      * @Transactional을 통해 이 모든 과정이 하나라도 실패하면 전체 롤백됩니다.
      */
@@ -45,12 +45,12 @@ public class ProjectServiceImpl implements ProjectService {
         // 2. 통합 멤버 리스트 생성
         List<ProjectMemberVO> membersToInsert = new ArrayList<>();
 
-        // 2-1. 생성자(Owner) 자동 등록: 본인이 만든 것이므로 즉시 JOINED 상태
+        // 2-1. 생성자(Owner) 자동 등록: 본인이 만든 것이므로 즉시 ACTIVE 상태
         membersToInsert.add(ProjectMemberVO.builder()
                 .projectId(projectId)
                 .userId(ownerId)
                 .role("OWNER")
-                .status("JOINED") // 요구사항 반영
+                .status("ACTIVE") // 요구사항 반영
                 .joinedAt(LocalDateTime.now())
                 .build());
 
