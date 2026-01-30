@@ -2,6 +2,7 @@ package com.example.LlmSpring.project;
 
 import com.example.LlmSpring.project.request.ProjectCreateRequestDTO;
 import com.example.LlmSpring.project.request.ProjectUpdateRequestDTO;
+import com.example.LlmSpring.project.response.ProjectDetailResponseDTO;
 import com.example.LlmSpring.project.response.ProjectListResponseDTO;
 import java.util.List;
 
@@ -31,4 +32,6 @@ public interface ProjectService {
     // 삭제 취소 기능 추가
     int restoreProject(int projectId, String userId);
 
+    // 단일 프로젝트 상세 조회
+    ProjectDetailResponseDTO getProjectDetail(int projectId, String userId);
 }

@@ -3,12 +3,13 @@ package com.example.LlmSpring.project;
 import com.example.LlmSpring.alarm.AlarmService;
 import com.example.LlmSpring.project.request.ProjectCreateRequestDTO;
 import com.example.LlmSpring.project.request.ProjectUpdateRequestDTO;
+import com.example.LlmSpring.project.response.ProjectDetailResponseDTO;
 import com.example.LlmSpring.project.response.ProjectListResponseDTO;
+import com.example.LlmSpring.projectMember.ProjectMemberMapper;
 import com.example.LlmSpring.projectMember.ProjectMemberVO;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +20,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     private final ProjectMapper projectMapper;
     private final AlarmService alarmService;
+    private final ProjectMemberMapper projectMemberMapper;
 
     /**
      * 프로젝트 생성 및 멤버 초기화
@@ -169,6 +171,38 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public List<ProjectListResponseDTO> getTrashProjects(String userId) { // 사용자가 참여중인 삭제 예정의 프로젝트 목록 조회
         return projectMapper.getDetailedTrashProjectList(userId);
+    }
+
+    @Override
+    public ProjectDetailResponseDTO getProjectDetail(int projectId, String userId) {
+        // 1. 프로젝트 조회 (ProjectMapper.xml에 selectProjectById는 이미 존재함)
+
+        ProjectVO project = projectMapper.selectProjectById((long) projectId);
+
+        // 2. 프로젝트 존재 및 삭제 여부 확인
+        if (project == null || project.getDeletedAt() != null) {
+            throw new RuntimeException("존재하지 않거나 삭제된 프로젝트입니다.");
+        }
+
+        // 3. 권한 확인: 요청자가 해당 프로젝트의 활성 멤버인지 확인
+        boolean isMember = projectMemberMapper.existsActiveMember(projectId, userId);
+        if (!isMember) {
+            throw new RuntimeException("해당 프로젝트의 멤버만 상세 정보를 조회할 수 있습니다.");
+        }
+
+        // 4. VO -> DetailDTO 변환
+        return ProjectDetailResponseDTO.builder()
+                .projectId(project.getProjectId())
+                .name(project.getName())
+                .description(project.getDescription())
+                .startDate(project.getStartDate())
+                .endDate(project.getEndDate())
+                .status(project.getStatus())
+                .githubRepoUrl(project.getGithubRepoUrl())
+                .dailyReportTime(project.getDailyReportTime())
+                .githubDefaultBranch(project.getGithubDefaultBranch())
+                .githubConnectedStatus(project.getGithubConnectedStatus())
+                .build();
     }
 
     /**

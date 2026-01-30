@@ -4,6 +4,7 @@ import com.example.LlmSpring.project.request.ProjectCreateRequestDTO;
 import com.example.LlmSpring.project.ProjectService;
 import com.example.LlmSpring.project.request.ProjectStatusRequestDTO;
 import com.example.LlmSpring.project.request.ProjectUpdateRequestDTO;
+import com.example.LlmSpring.project.response.ProjectDetailResponseDTO;
 import com.example.LlmSpring.project.response.ProjectListResponseDTO;
 import com.example.LlmSpring.util.JWTService;
 import java.util.ArrayList;
@@ -202,6 +203,33 @@ public class ProjectController {
         }
 
         return ResponseEntity.ok(list);
+    }
+
+    /**
+     * [단일 프로젝트 상세 정보 조회 API]
+     * GET /api/projects/{projectId}
+     */
+    @GetMapping("/{projectId}")
+    public ResponseEntity<?> getProjectDetail(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable("projectId") int projectId) {
+
+        try {
+            String token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
+            String userId = jwtService.verifyTokenAndUserId(token);
+
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("유효하지 않거나 만료된 토큰입니다.");
+            }
+
+            // 새로 만든 ProjectDetailResponseDTO를 반환
+            ProjectDetailResponseDTO project = projectService.getProjectDetail(projectId, userId);
+
+            return ResponseEntity.ok(project);
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
     }
 
     /**
