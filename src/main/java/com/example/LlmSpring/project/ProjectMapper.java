@@ -61,4 +61,7 @@ public interface ProjectMapper {
 
     // 15. 휴지통 프로젝트 상세 조회 (추가)
     List<ProjectListResponseDTO> getDetailedTrashProjectList(@Param("userId") String userId);
+
+    // 16. 프로젝트 이름 조회
+    String getProjectName(int projectId);
 }
