@@ -1,5 +1,6 @@
 package com.example.LlmSpring.project;
 
+import com.example.LlmSpring.alarm.AlarmService;
 import com.example.LlmSpring.project.request.ProjectCreateRequestDTO;
 import com.example.LlmSpring.project.request.ProjectUpdateRequestDTO;
 import com.example.LlmSpring.project.response.ProjectListResponseDTO;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProjectServiceImpl implements ProjectService {
 
     private final ProjectMapper projectMapper;
+    private final AlarmService alarmService;
 
     /**
      * 프로젝트 생성 및 멤버 초기화
@@ -66,6 +68,8 @@ public class ProjectServiceImpl implements ProjectService {
                             .status("INVITED")
                             .build());
                 }
+
+                alarmService.sendInviteAlarm(ownerId, memberId, projectId);
             }
         }
 

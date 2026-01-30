@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.LlmSpring.alarm.AlarmMapper">
+
+    <insert id="insertAlarm" parameterType="AlarmVO"
+            useGeneratedKeys="true" keyProperty="alarmId">
+        INSERT INTO Alarm (
+            user_id, sender_id, project_id, type, reference_id, content, url
+        ) VALUES (
+                     #{userId}, #{senderId}, #{projectId}, #{type}, #{referenceId}, #{content}, #{url}
+                 )
+    </insert>
+
+    <select id="selectMyAlarms" resultType="AlarmVO">
+        SELECT
+            a.*,
+            sender.name AS senderName,
+            sender.file_path AS senderFilePath,
+            p.name AS projectName
+        FROM Alarm a
+                 -- 보낸 사람 정보 (시스템 알림일 수 있으니 LEFT JOIN)
+                 LEFT JOIN User sender ON a.sender_id = sender.user_id
+            -- 프로젝트 정보 (프로젝트 관련 없을 수 있으니 LEFT JOIN)
+                 LEFT JOIN Project p ON a.project_id = p.project_id
+        WHERE a.user_id = #{userId}
+          AND a.deleted_at IS NULL
+        ORDER BY a.created_at DESC
+    </select>
+
+    <update id="markAsRead">
+        UPDATE Alarm
+        SET is_read = TRUE
+        WHERE alarm_id = #{alarmId}
+    </update>
+
+    <update id="markAllAsRead">
+        UPDATE Alarm
+        SET is_read = TRUE
+        WHERE user_id = #{userId}
+          AND is_read = FALSE
+    </update>
+
+    <select id="countUnreadAlarms" resultType="int">
+        SELECT COUNT(*)
+        FROM Alarm
+        WHERE user_id = #{userId}
+          AND is_read = FALSE
+          AND deleted_at IS NULL
+    </select>
+
+    <update id="deleteAlarm">
+        UPDATE Alarm
+        SET deleted_at = NOW()
+        WHERE alarm_id = #{alarmId}
+    </update>
+
+</mapper>
