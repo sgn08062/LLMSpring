@@ -6,6 +6,8 @@ import com.example.LlmSpring.util.JWTService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.springframework.http.MediaType;
 
 import java.util.List;
 
@@ -73,5 +75,14 @@ public class AlarmController {
 
         alarmService.deleteAllAlarms(userId);
         return ResponseEntity.ok().build();
+    }
+
+    // 7. 알림 구독
+    @GetMapping(value = "/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter subsecribe(@RequestHeader("Authorization") String authHeader){
+        String token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
+        String userId = jwtService.verifyTokenAndUserId(token);
+
+        return alarmService.subscribe(userId);
     }
 }

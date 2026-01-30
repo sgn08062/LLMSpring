@@ -5,8 +5,11 @@ import com.example.LlmSpring.user.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
@@ -15,10 +18,27 @@ public class AlarmServiceImpl implements AlarmService {
     private final UserMapper userMapper;
     private final ProjectMapper projectMapper;
 
+    // 사용자 ID별 Emitter 저장소
+    private final Map<String, SseEmitter> emitters = new ConcurrentHashMap<>();
+
     @Override
     @Transactional
     public void createAlarm(AlarmVO alarmVO) {
         alarmMapper.insertAlarm(alarmVO);
+
+        // 실시간 전송
+        String receiverId = alarmVO.getUserId();
+        SseEmitter emitter = emitters.get(receiverId);
+
+        if(emitter != null){
+            try{
+                emitter.send(SseEmitter.event()
+                        .name("alarm")
+                        .data(alarmVO));
+            }catch (Exception e){
+                emitters.remove(receiverId);
+            }
+        }
     }
 
     @Override
@@ -73,5 +93,30 @@ public class AlarmServiceImpl implements AlarmService {
     @Transactional
     public void deleteAllAlarms(String userId) {
         alarmMapper.deleteAllAlarms(userId);
+    }
+
+    @Override
+    public SseEmitter subscribe(String userId) {
+        // 1. Emitter (타임아웃 1시간)
+        SseEmitter emitter = new SseEmitter(60*60*1000L);
+
+        // 2. emitter 저장
+        emitters.put(userId, emitter);
+
+        // 3. 연결 종료/타임아웃/에러 시 제거
+        emitter.onCompletion(() -> emitters.remove(userId));
+        emitter.onTimeout(() -> emitters.remove(userId));
+        emitter.onError((e) -> emitters.remove(userId));
+
+        // 4. 연결 즉시 더미 데이터 전송
+        try{
+            emitter.send(SseEmitter.event()
+                    .name("connect")
+                    .data("connected!"));
+        }catch (Exception e){
+            emitters.remove(userId);
+        }
+
+        return emitter;
     }
 }

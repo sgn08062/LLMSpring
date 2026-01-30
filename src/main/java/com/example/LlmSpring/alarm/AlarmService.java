@@ -1,5 +1,7 @@
 package com.example.LlmSpring.alarm;
 
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
 import java.util.List;
 
 public interface AlarmService {
@@ -13,4 +15,6 @@ public interface AlarmService {
 
     void deleteReadAlarms(String userId);
     void deleteAllAlarms(String userId);
+
+    SseEmitter subscribe(String userId);
 }
