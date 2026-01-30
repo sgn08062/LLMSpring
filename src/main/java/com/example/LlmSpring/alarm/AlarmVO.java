@@ -16,7 +16,7 @@ public class AlarmVO {
     private Integer referenceId;
     private String content;
     private String url;
-    private boolean isRead;
+    private Boolean isRead;
     private LocalDateTime createdAt;
     private LocalDateTime deletedAt;
 

@@ -10,4 +10,7 @@ public interface AlarmService {
     void markAsRead(int alarmId);
     void markAllAsRead(String userId);
     int getUnreadCount(String userId);
+
+    void deleteReadAlarms(String userId);
+    void deleteAllAlarms(String userId);
 }

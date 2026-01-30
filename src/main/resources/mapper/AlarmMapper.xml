@@ -56,4 +56,19 @@
         WHERE alarm_id = #{alarmId}
     </update>
 
+    <update id="deleteReadAlarms">
+        UPDATE Alarm
+        SET deleted_at = NOW()
+        WHERE user_id = #{userId}
+          AND is_read = TRUE
+          AND deleted_at IS NULL
+    </update>
+
+    <update id="deleteAllAlarms">
+        UPDATE Alarm
+        SET deleted_at = NOW()
+        WHERE user_id = #{userId}
+          AND deleted_at IS NULL
+    </update>
+
 </mapper>

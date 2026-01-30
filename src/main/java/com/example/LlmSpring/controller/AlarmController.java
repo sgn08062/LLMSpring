@@ -37,19 +37,41 @@ public class AlarmController {
     }
 
     // 3. 특정 알림 읽음 처리
-    @PatchMapping("/{alarmId}/read")
+    @PutMapping("/{alarmId}/read")
     public ResponseEntity<?> markAsRead(@PathVariable int alarmId){
         alarmService.markAsRead(alarmId);
         return ResponseEntity.ok().build();
     }
 
     // 4. 모든 알림 읽음 처리
-    @PatchMapping("/read-all")
+    @PutMapping("/read-all")
     public ResponseEntity<?> markAsReadAll(@RequestHeader("Authorization") String authHeader){
         String token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
         String userId = jwtService.verifyTokenAndUserId(token);
 
+        System.out.println("전부 읽음 컨트롤러 진입");
+
         alarmService.markAllAsRead(userId);
+        return ResponseEntity.ok().build();
+    }
+
+    // 5. 읽은 알림 삭제
+    @DeleteMapping("/read")
+    public ResponseEntity<?> deleteReadAlarms(@RequestHeader("Authorization") String authHeader) {
+        String token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
+        String userId = jwtService.verifyTokenAndUserId(token);
+
+        alarmService.deleteReadAlarms(userId);
+        return ResponseEntity.ok().build();
+    }
+
+    // 6. 모든 알림 삭제
+    @DeleteMapping("/all")
+    public ResponseEntity<?> deleteAllAlarms(@RequestHeader("Authorization") String authHeader) {
+        String token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
+        String userId = jwtService.verifyTokenAndUserId(token);
+
+        alarmService.deleteAllAlarms(userId);
         return ResponseEntity.ok().build();
     }
 }

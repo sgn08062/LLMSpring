@@ -53,11 +53,25 @@ public class AlarmServiceImpl implements AlarmService {
 
     @Override
     public void markAllAsRead(String userId) {
+        System.out.println("전부 읽음 서비스 진입");
         alarmMapper.markAllAsRead(userId);
     }
 
     @Override
     public int getUnreadCount(String userId) {
         return alarmMapper.countUnreadAlarms(userId);
+    }
+
+
+    @Override
+    @Transactional
+    public void deleteReadAlarms(String userId) {
+        alarmMapper.deleteReadAlarms(userId);
+    }
+
+    @Override
+    @Transactional
+    public void deleteAllAlarms(String userId) {
+        alarmMapper.deleteAllAlarms(userId);
     }
 }

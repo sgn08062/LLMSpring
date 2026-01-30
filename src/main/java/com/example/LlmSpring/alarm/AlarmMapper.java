@@ -23,4 +23,10 @@ public interface AlarmMapper {
 
     // 6. 알림 삭제
     void deleteAlarm(int alarmId);
+
+    // 7. 읽은 알림 삭제
+    void deleteReadAlarms(String userId);
+
+    // 8. 모든 알림 삭제
+    void deleteAllAlarms(String userId);
 }
