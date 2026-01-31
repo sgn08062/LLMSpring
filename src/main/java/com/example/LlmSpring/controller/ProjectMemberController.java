@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Collections;
 import java.util.List;
 
 @RestController
@@ -141,6 +143,56 @@ public class ProjectMemberController {
             return ResponseEntity.ok(message);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/{projectId}/accept")
+    public ResponseEntity<?> acceptInvitation(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable("projectId") int projectId
+    ){
+        try{
+            String token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
+            String userId = jwtService.verifyTokenAndUserId(token);
+
+            if(userId == null){
+                // 에러 메시지도 JSON으로 맞추려면 Map 사용 권장
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Collections.singletonMap("error", "유효하지 않거나 만료된 토큰입니다"));
+            }
+
+            System.out.println("컨트롤러 진입: " + userId + ", 프로젝트 아이디: " + projectId);
+
+            projectMemberService.acceptInvitation(projectId, userId);
+
+            return ResponseEntity.ok(Collections.singletonMap("message", "프로젝트 초대를 수락했습니다"));
+        }catch (RuntimeException e){
+            return ResponseEntity.badRequest().body(Collections.singletonMap("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{projectId}/decline")
+    public ResponseEntity<?> declineInvitation(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable("projectId") int projectId
+    ) {
+        try {
+            String token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
+            String userId = jwtService.verifyTokenAndUserId(token);
+
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Collections.singletonMap("error", "유효하지 않거나 만료된 토큰입니다"));
+            }
+
+            projectMemberService.declineInvitation(projectId, userId);
+
+            // JSON 응답 반환
+            return ResponseEntity.ok(Collections.singletonMap("message", "프로젝트 초대를 거절했습니다."));
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(Collections.singletonMap("error", e.getMessage()));
         }
     }
 

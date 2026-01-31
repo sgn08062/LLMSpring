@@ -188,8 +188,9 @@ public class ProjectServiceImpl implements ProjectService {
         }
 
         // 3. 권한 확인: 요청자가 해당 프로젝트의 활성 멤버인지 확인
-        boolean isMember = projectMemberMapper.existsActiveMember(projectId, userId);
-        if (!isMember) {
+        String memberStatus = projectMemberMapper.selectMemberStatus(projectId, userId);
+
+        if(memberStatus == null){
             throw new RuntimeException("해당 프로젝트의 멤버만 상세 정보를 조회할 수 있습니다.");
         }
 
@@ -205,6 +206,7 @@ public class ProjectServiceImpl implements ProjectService {
                 .dailyReportTime(project.getDailyReportTime())
                 .githubDefaultBranch(project.getGithubDefaultBranch())
                 .githubConnectedStatus(project.getGithubConnectedStatus())
+                .currentUserStatus(memberStatus)
                 .deletedAt(project.getDeletedAt())
                 .build();
     }

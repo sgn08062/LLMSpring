@@ -204,5 +204,42 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
         }
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void acceptInvitation(int projectId, String userId) {
+        // 1. 현재 상태 조회
+        String currentStatus = projectMemberMapper.selectMemberStatus(projectId, userId);
 
+        // 2. 검증
+        if (currentStatus == null) {
+            throw new RuntimeException("해당 프로젝트의 멤버가 아닙니다.");
+        }
+        if ("ACTIVE".equals(currentStatus)) {
+            throw new RuntimeException("이미 참여 중인 프로젝트입니다.");
+        }
+        if (!"INVITED".equals(currentStatus)) {
+            throw new RuntimeException("유효하지 않은 초대 상태입니다.");
+        }
+
+        // 3. 상태 업데이트 (INVITED -> ACTIVE)
+        projectMemberMapper.updateMemberStatus(projectId, userId, "ACTIVE");
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void declineInvitation(int projectId, String userId) {
+        // 1. 상태 검증
+        String currentStatus = projectMemberMapper.selectMemberStatus(projectId, userId);
+
+        if (currentStatus == null) {
+            throw new RuntimeException("해당 프로젝트의 멤버가 아닙니다.");
+        }
+        // 이미 참여 중인 사람은 거절 불가 (탈퇴 로직을 따로 써야 함)
+        if ("ACTIVE".equals(currentStatus)) {
+            throw new RuntimeException("이미 참여 중인 멤버는 거절할 수 없습니다.");
+        }
+
+        // 2. 거절 실행 (deleted_at 업데이트)
+        projectMemberMapper.declineInvitation(projectId, userId);
+    }
 }

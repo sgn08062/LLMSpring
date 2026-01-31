@@ -20,4 +20,7 @@ public class ProjectDetailResponseDTO {
     private String githubDefaultBranch;
     private String githubConnectedStatus;
     private LocalDateTime deletedAt; // 삭제 여부 및 삭제 예정일
+
+    // 접속하려는 프로젝트의 사용자 상태(ACTIVE, INVITED)
+    private String currentUserStatus;
 }

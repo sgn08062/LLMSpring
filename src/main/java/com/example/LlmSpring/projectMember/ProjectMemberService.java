@@ -39,4 +39,10 @@ public interface ProjectMemberService {
      * @param dto 작업 대상자 및 행위(액션) 정보를 담은 DTO
      */
     void removeMember(int projectId, String requesterId, ProjectMemberRemoveRequestDTO dto);
+
+    // 5. 초대 수락
+    void acceptInvitation(int projectId, String userId);
+
+    // 6. 초대 거절
+    void declineInvitation(int projectId, String userId);
 }
