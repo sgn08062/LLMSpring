@@ -160,9 +160,12 @@ public class IssueController {
      * GET /api/projects/{projectId}/issues/
      */
     @GetMapping
-    public ResponseEntity<?> list(@RequestHeader("Authorization") String auth, @PathVariable int projectId,
-                                  @RequestParam(required = false) String status, @RequestParam(required = false) Integer priority,
-                                  @RequestParam(required = false) String assigneeId, @RequestParam(defaultValue = "createdAt_desc") String sort) {
+    public ResponseEntity<?> list(@RequestHeader("Authorization") String auth,
+                                  @PathVariable int projectId,
+                                  @RequestParam(required = false) String status,
+                                  @RequestParam(required = false) Integer priority,
+                                  @RequestParam(required = false) String assigneeId,
+                                  @RequestParam(defaultValue = "createdAt_desc") String sort) {
         String uid = jwtService.verifyTokenAndUserId(auth.replace("Bearer ", ""));
         return ResponseEntity.ok(issueService.getIssueList(projectId, uid, status, priority, assigneeId, sort));
     }
