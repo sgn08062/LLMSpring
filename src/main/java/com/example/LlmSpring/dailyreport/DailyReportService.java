@@ -6,6 +6,7 @@ import com.example.LlmSpring.project.ProjectVO;
 import com.example.LlmSpring.user.UserMapper;
 import com.example.LlmSpring.user.UserVO;
 import com.example.LlmSpring.util.EncryptionUtil;
+import com.example.LlmSpring.util.S3Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -34,6 +35,7 @@ public class DailyReportService {
     private final UserMapper userMapper;         // 유저 정보(GitHub Token) 조회용
     private final ProjectMapper projectMapper;   // 프로젝트 정보(Repo URL) 조회용
     private final EncryptionUtil encryptionUtil; // 토큰 복호화용
+    private final S3Service s3Service;
 
     @Value("${gemini.api.key}")
     private String geminiApiKey;
@@ -112,9 +114,19 @@ public class DailyReportService {
         }
         // === [AI 및 GitHub 연동 로직 끝] ===
 
-        newReport.setContent(aiContent);
+        // === [S3 업로드 로직 추가] ===
+        // 1. 파일 경로 생성: dailyReport/{projectId}/yyyyMMdd_{userId}.md
+        String dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String s3Key = String.format("dailyReport/%d/%s_%s.md", projectId, dateStr, userId);
+
+        // 2. 텍스트를 S3에 업로드하고 URL 반환
+        String s3Url = s3Service.uploadTextContent(s3Key, aiContent);
+
+        // 3. DB에는 URL 저장 (기획 의도 반영)
+        newReport.setContent(s3Url); // content 컬럼에 URL 저장
+        newReport.setDrFilePath(s3Url); // drFilePath 컬럼에도 동일하게 저장 (권장)
         newReport.setCommitCount(commitCount);
-        newReport.setOriginalContent(true); // AI가 쓴 초안임을 표시
+        newReport.setOriginalContent(true);
 
         dailyReportMapper.insertReport(newReport);
 
@@ -350,10 +362,26 @@ public class DailyReportService {
 
     //3. 리포트 임시 저장
     public void updateReport(Long reportId, String content, String title) {
+        // 기존 리포트 정보를 가져와서 경로 재구성 필요
+        DailyReportVO existingVO = dailyReportMapper.selectReportById(reportId);
+        if(existingVO == null) throw new IllegalArgumentException("Report not found");
+
+        // 1. 파일 경로 재구성 (기존 파일 덮어쓰기)
+        String dateStr = existingVO.getReportDate().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String s3Key = String.format("dailyReport/%d/%s_%s.md",
+                existingVO.getProjectId(), dateStr, existingVO.getUserId());
+
+        // 2. 수정된 텍스트(content)를 S3에 다시 업로드 (덮어쓰기)
+        String s3Url = s3Service.uploadTextContent(s3Key, content);
+
+        // 3. DB 업데이트 (Content에는 URL 저장)
         DailyReportVO vo = new DailyReportVO();
         vo.setReportId(reportId);
         vo.setTitle(title);
-        vo.setContent(content);
+        vo.setContent(s3Url); // URL 저장
+        vo.setDrFilePath(s3Url);
+        vo.setOriginalContent(false); // 수정됨
+
         dailyReportMapper.updateReport(vo);
     }
 

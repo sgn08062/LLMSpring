@@ -6,7 +6,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 @Service
@@ -41,5 +44,18 @@ public class S3Service {
         }catch(Exception e){
             System.out.println("S3 파일 삭제 실패: " + e.getMessage());
         }
+    }
+
+    //  텍스트 내용을 S3에 파일로 저장하고 URL 반환
+    public String uploadTextContent(String path, String content) {
+        // String을 InputStream으로 변환
+        byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
+        InputStream inputStream = new ByteArrayInputStream(contentBytes);
+
+        // S3에 업로드 (이미 경로가 지정되어 들어옴)
+        s3Template.upload(bucketName, path, inputStream);
+
+        // 업로드 된 파일의 URL 반환
+        return "https://" + bucketName + ".s3.ap-northeast-2.amazonaws.com/" + path;
     }
 }
