@@ -4,6 +4,7 @@ import com.example.LlmSpring.project.request.ProjectCreateRequestDTO;
 import com.example.LlmSpring.project.ProjectService;
 import com.example.LlmSpring.project.request.ProjectStatusRequestDTO;
 import com.example.LlmSpring.project.request.ProjectUpdateRequestDTO;
+import com.example.LlmSpring.project.response.ProjectDashboardResponseDTO;
 import com.example.LlmSpring.project.response.ProjectDetailResponseDTO;
 import com.example.LlmSpring.project.response.ProjectListResponseDTO;
 import com.example.LlmSpring.util.JWTService;
@@ -265,6 +266,19 @@ public class ProjectController {
             // 3. 권한 부족(OWNER가 아님) 또는 유예 기간 만료 예외 처리
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
         }
+    }
+
+    /**
+     * [프로젝트 대시보드 통계 조회 API]
+     * 특정 프로젝트의 업무 진행률, 이슈 개수, 멤버 수를 조회합니다.
+     */
+    @GetMapping("/{projectId}/dashboard")
+    public ResponseEntity<ProjectDashboardResponseDTO> getProjectDashboard(
+            @PathVariable("projectId") Long projectId) {
+
+        // 서비스에서 통계 데이터를 가져옴
+        ProjectDashboardResponseDTO stats = projectService.getProjectDashboardStats(projectId);
+        return ResponseEntity.ok(stats);
     }
 
 }

@@ -236,4 +236,31 @@
         FROM project
         WHERE project_id = #{projectId}
     </select>
+
+    <!-- 12. 프로젝트 통계 조회   -->
+    <select id="selectProjectStats" resultType="com.example.LlmSpring.project.response.ProjectDashboardResponseDTO">
+        SELECT
+            -- 1. 전체 업무 수 (삭제 안 된 것)
+            (SELECT COUNT(*)
+             FROM Task
+             WHERE project_id = #{projectId} AND deleted_at IS NULL) AS totalTaskCount,
+
+            -- 2. 완료된 업무 수 (status가 DONE인 것)
+            (SELECT COUNT(*)
+             FROM Task
+             WHERE project_id = #{projectId} AND status = 'DONE' AND deleted_at IS NULL) AS completedTaskCount,
+
+            -- 3. 진행 중인 업무 수 (IN_PROGRESS 상태만)
+            (SELECT COUNT(*) FROM Task WHERE project_id = #{projectId} AND status = 'IN_PROGRESS' AND deleted_at IS NULL) AS inProgressTaskCount,
+
+            -- 4. 오픈 이슈 수 (상태가 DONE이 아닌 것)
+            (SELECT COUNT(*)
+             FROM Issue
+             WHERE project_id = #{projectId} AND status != 'DONE' AND archived_at IS NULL) AS openIssueCount,
+
+            -- 5. 멤버 수 (초대된 사람 제외, 실제 활동 중인 사람)
+            (SELECT COUNT(*)
+        FROM ProjectMember
+        WHERE project_id = #{projectId} AND status = 'ACTIVE' AND deleted_at IS NULL) AS memberCount
+    </select>
 </mapper>

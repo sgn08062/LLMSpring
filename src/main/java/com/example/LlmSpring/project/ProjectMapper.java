@@ -1,5 +1,6 @@
 package com.example.LlmSpring.project;
 
+import com.example.LlmSpring.project.response.ProjectDashboardResponseDTO;
 import com.example.LlmSpring.project.response.ProjectListResponseDTO;
 import com.example.LlmSpring.projectMember.ProjectMemberVO;
 import java.time.LocalDateTime;
@@ -64,4 +65,7 @@ public interface ProjectMapper {
 
     // 16. 프로젝트 이름 조회
     String getProjectName(int projectId);
+
+    // 17. 통계 조회
+    ProjectDashboardResponseDTO selectProjectStats(Long projectId);
 }

@@ -2,6 +2,7 @@ package com.example.LlmSpring.project;
 
 import com.example.LlmSpring.project.request.ProjectCreateRequestDTO;
 import com.example.LlmSpring.project.request.ProjectUpdateRequestDTO;
+import com.example.LlmSpring.project.response.ProjectDashboardResponseDTO;
 import com.example.LlmSpring.project.response.ProjectDetailResponseDTO;
 import com.example.LlmSpring.project.response.ProjectListResponseDTO;
 import java.util.List;
@@ -34,5 +35,8 @@ public interface ProjectService {
 
     // 단일 프로젝트 상세 조회
     ProjectDetailResponseDTO getProjectDetail(int projectId, String userId);
+
+    // 대시보드 통계 조회
+    ProjectDashboardResponseDTO getProjectDashboardStats(Long projectId);
 
 }

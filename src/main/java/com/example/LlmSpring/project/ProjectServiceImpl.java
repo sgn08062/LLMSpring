@@ -241,4 +241,21 @@ public class ProjectServiceImpl implements ProjectService {
         return projectMapper.restoreProject(projectId);
     }
 
+    /**
+     * [대시보드 통계 조회]
+     * 프로젝트의 전체 진행 상황을 한눈에 보기 위한 통계 데이터를 반환합니다.
+     * (전체 업무 수, 완료된 업무 수, 해결되지 않은 이슈 수, 참여 멤버 수)
+     */
+    @Override
+    public com.example.LlmSpring.project.response.ProjectDashboardResponseDTO getProjectDashboardStats(Long projectId) {
+        // 1. 프로젝트 존재 여부 확인 (선택 사항이지만 안전을 위해 추천)
+        ProjectVO project = projectMapper.selectProjectById(projectId);
+        if (project == null) {
+            throw new RuntimeException("존재하지 않는 프로젝트입니다.");
+        }
+
+        // 2. Mapper를 통해 통계 데이터 조회 및 반환
+        return projectMapper.selectProjectStats(projectId);
+    }
+
 }
