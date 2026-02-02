@@ -1,10 +1,12 @@
 package com.example.LlmSpring.issue;
 
+import com.example.LlmSpring.alarm.AlarmService;
 import com.example.LlmSpring.issue.request.IssueCreateRequestDTO;
 import com.example.LlmSpring.issue.response.IssueDetailResponseDTO;
 import com.example.LlmSpring.issue.response.IssueListResponseDTO;
 import com.example.LlmSpring.issue.request.IssueUpdateRequestDTO;
 import com.example.LlmSpring.project.ProjectMapper;
+import com.example.LlmSpring.projectMember.ProjectMemberMapper;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +19,8 @@ public class IssueServiceImpl implements IssueService {
 
     private final IssueMapper issueMapper;
     private final ProjectMapper projectMapper; // 권한 확인을 위해 기존 매퍼 주입
+    private final ProjectMemberMapper projectMemberMapper;
+    private final AlarmService alarmService;
 
     /**
      * 이슈 생성 비즈니스 로직
@@ -80,6 +84,18 @@ public class IssueServiceImpl implements IssueService {
 
             // Batch Insert 호출 (담당자 자격은 DB FK 제약조건에서 최종 검증됨)
             issueMapper.insertIssueAssignees(assignees);
+
+            // 담당자들에게 알림 전송 로직
+            for (String assigneeId : dto.getAssigneeIds()) {
+                // "userId(생성자)"가 "assigneeId(담당자)"에게 알림을 보냄
+                alarmService.sendIssueAssignAlarm(
+                        userId,             // 보낸 사람 (이슈 생성자)
+                        assigneeId,         // 받는 사람 (담당자)
+                        projectId,
+                        issueId,
+                        issue.getTitle()
+                );
+            }
         }
 
         return issueId;
@@ -173,9 +189,26 @@ public class IssueServiceImpl implements IssueService {
                 .build());
 
         // 7. 이슈 상태 자동 전환: UNASSIGNED인 경우 IN_PROGRESS로 변경
-        if ("UNASSIGNED".equals(issue.getStatus())) {
-            issueMapper.updateIssueStatus(issueId, "IN_PROGRESS");
+        // 담당자가 추가되었으므로, 현재 상태가 UNASSIGNED라면 IN_PROGRESS로 변경
+        IssueVO updatedIssue = issueMapper.selectIssueById(issueId);
+
+        if ("UNASSIGNED".equals(updatedIssue.getStatus())) {
+            IssueVO updateVo = IssueVO.builder()
+                    .issueId(issueId)
+                    .status("IN_PROGRESS")
+                    .build();
+            issueMapper.updateIssuePartial(updateVo);
         }
+
+        // requesterId(보낸 사람) -> targetUserId(받는 사람)
+        alarmService.sendIssueAssignAlarm(
+                requesterId,
+                targetUserId,
+                projectId,
+                issueId,
+                updatedIssue.getTitle() // 이슈 제목
+        );
+
     }
 
     /**
@@ -221,9 +254,16 @@ public class IssueServiceImpl implements IssueService {
         issueMapper.deleteAssignee(issueId, targetUserId);
 
         // 7. 상태 회귀 로직: 남은 담당자가 0명인 경우 UNASSIGNED로 변경
-        int remainingCount = issueMapper.countAssigneesByIssueId(issueId);
-        if (remainingCount == 0) {
-            issueMapper.updateIssueStatus(issueId, "UNASSIGNED");
+        int count = issueMapper.countAssigneesByIssueId(issueId);
+        IssueVO updatedIssue = issueMapper.selectIssueById(issueId);
+
+        // 진행 중(IN_PROGRESS) 상태였는데 담당자가 다 사라지면 미배정으로 복귀
+        if (count == 0 && "IN_PROGRESS".equals(updatedIssue.getStatus())) {
+            IssueVO updateVo = IssueVO.builder()
+                    .issueId(issueId)
+                    .status("UNASSIGNED")
+                    .build();
+            issueMapper.updateIssuePartial(updateVo);
         }
     }
 
@@ -249,10 +289,11 @@ public class IssueServiceImpl implements IssueService {
         // 3. 권한 검증: OWNER 또는 Creator만 가능 (담당자 제외)
         String role = projectMapper.getProjectRole(projectId, userId);
         boolean isOwner = "OWNER".equals(role);
+        boolean isAdmin = "ADMIN".equals(role);
         boolean isCreator = userId.equals(issue.getCreatedBy());
 
-        if (!isOwner && !isCreator) {
-            throw new RuntimeException("프로젝트 소유자나 이슈 생성자만 수정할 수 있습니다.");
+        if (!isOwner && !isAdmin && !isCreator) {
+            throw new RuntimeException("프로젝트 관리자(OWNER/ADMIN)나 이슈 생성자만 수정할 수 있습니다.");
         }
 
         // 4. 우선순위 범위 검증 (0~5)
@@ -261,15 +302,22 @@ public class IssueServiceImpl implements IssueService {
         }
 
         // 5. 상태 변경 시 담당자 유무 규칙 검증
-        if (dto.getStatus() != null && !dto.getStatus().equals(issue.getStatus())) {
-            int assigneeCount = issueMapper.countAssigneesByIssueId(issueId);
+        // 현재 담당자 수 확인
+        int assigneeCount = issueMapper.countAssigneesByIssueId(issueId);
 
-            if ("UNASSIGNED".equals(dto.getStatus()) && assigneeCount > 0) {
-                throw new RuntimeException("담당자가 있는 이슈는 UNASSIGNED로 변경할 수 없습니다.");
-            }
-            if ("IN_PROGRESS".equals(dto.getStatus()) && assigneeCount == 0) {
-                throw new RuntimeException("담당자가 없는 이슈는 IN_PROGRESS로 변경할 수 없습니다.");
-            }
+        // 최종적으로 반영될 상태 결정 (DTO에 값이 없으면 기존 상태 유지)
+        String targetStatus = (dto.getStatus() != null) ? dto.getStatus() : issue.getStatus();
+
+        // 규칙 1: 담당자가 없으면 IN_PROGRESS일 수 없다 -> UNASSIGNED로 강제 변경
+        // (단, DONE 상태는 담당자가 없어도 유지될 수 있다고 가정. 만약 DONE도 막으려면 조건 추가 필요)
+        if (assigneeCount == 0 && "IN_PROGRESS".equals(targetStatus)) {
+            targetStatus = "UNASSIGNED";
+        }
+
+        // 규칙 2: 담당자가 있으면 UNASSIGNED일 수 없다 -> IN_PROGRESS로 강제 변경
+        // (완료된 이슈(DONE)가 아니라면, 담당자가 생기는 순간 진행 중으로 봅니다)
+        if (assigneeCount > 0 && "UNASSIGNED".equals(targetStatus)) {
+            targetStatus = "IN_PROGRESS";
         }
 
         // 6. DB 반영 (VO에 데이터 매핑 후 호출)
@@ -279,7 +327,7 @@ public class IssueServiceImpl implements IssueService {
                 .description(dto.getDescription())
                 .priority(dto.getPriority())
                 .dueDate(dto.getDueDate())
-                .status(dto.getStatus())
+                .status(targetStatus) // 보정된 상태값 사용
                 .build();
 
         issueMapper.updateIssuePartial(updateVo);
@@ -345,4 +393,5 @@ public class IssueServiceImpl implements IssueService {
                 .assignees(assignees)
                 .build();
     }
+
 }

@@ -159,4 +159,26 @@
         WHERE ia.issue_id = #{issueId}
     </select>
 
+    <update id="updateIssue">
+        UPDATE Issue
+        <set>
+            <if test="dto.title != null">
+                title = #{dto.title},
+            </if>
+            <if test="dto.description != null">
+                description = #{dto.description},
+            </if>
+            <if test="dto.status != null">
+                status = #{dto.status},
+            </if>
+            <if test="dto.priority != null">
+                priority = #{dto.priority},
+            </if>
+            <if test="dto.dueDate != null">
+                due_date = #{dto.dueDate},
+            </if>
+        </set>
+        WHERE issue_id = #{issueId}
+    </update>
+
 </mapper>

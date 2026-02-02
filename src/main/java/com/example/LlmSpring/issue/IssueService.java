@@ -30,4 +30,6 @@ public interface IssueService {
     // 이슈 상세 내용 조회
     IssueDetailResponseDTO getIssueDetail(int projectId, int issueId, String userId);
 
+
+
 }

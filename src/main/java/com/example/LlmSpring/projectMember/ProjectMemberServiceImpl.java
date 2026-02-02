@@ -1,5 +1,6 @@
 package com.example.LlmSpring.projectMember;
 
+import com.example.LlmSpring.alarm.AlarmService;
 import com.example.LlmSpring.projectMember.request.ProjectMemberInviteRequestDTO;
 import com.example.LlmSpring.projectMember.request.ProjectMemberRemoveRequestDTO;
 import com.example.LlmSpring.projectMember.request.ProjectMemberRoleRequestDTO;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProjectMemberServiceImpl implements ProjectMemberService {
 
     private final ProjectMemberMapper projectMemberMapper;
+    private final AlarmService alarmService;
 
     // 프로젝트 멤버 목록 조회 구현체
     @Override
@@ -61,6 +63,8 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
             ProjectMemberVO newMember = ProjectMemberVO.builder()
                     .projectId(projectId)
                     .userId(inviteeId)
+                    .role("MEMBER")
+                    .status("INVITED")
                     .build();
             projectMemberMapper.insertMember(newMember);
         } else if (existingMember.getDeletedAt() == null) {
@@ -70,6 +74,10 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
             // Case C: 이전에 참여했다가 나간(Soft Delete) 경우 -> UPDATE
             projectMemberMapper.updateMemberToInvited(projectId, inviteeId);
         }
+
+        // 알림 전송 로직 추가 (DB 반영 성공 후 실행됨)
+        alarmService.sendInviteAlarm(inviterId, inviteeId, projectId);
+
     }
 
     // 프로젝트 멤버 역할 변경 구현체
@@ -224,6 +232,5 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
 
         return members;
     }
-
 
 }
