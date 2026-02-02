@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -61,7 +62,16 @@ public class FinalReportServiceImpl implements FinalReportService {
 
     @Override
     public FinalReportVO getFinalReportMetadata(Long projectId) {
-        return finalReportMapper.selectFinalReportByProjectId(projectId);
+        // 1. DB에서 리포트 정보 조회 (이때 content는 S3 URL임)
+        FinalReportVO report = finalReportMapper.selectFinalReportByProjectId(projectId);
+
+        // 2. 리포트가 존재하면 S3 URL을 실제 텍스트로 변환
+        if (report != null) {
+            String textContent = fetchContentFromS3(report.getContent());
+            report.setContent(textContent);
+        }
+
+        return report;
     }
 
     private String fetchContentFromS3(String url) {
@@ -70,37 +80,55 @@ public class FinalReportServiceImpl implements FinalReportService {
         }
         try {
             RestTemplate restTemplate = new RestTemplate();
-            return restTemplate.getForObject(url, String.class);
+            // String.class 대신 byte[].class로 수신
+            byte[] bytes = restTemplate.getForObject(url, byte[].class);
+
+            if (bytes != null) {
+                // 바이트 배열을 UTF-8 문자열로 변환
+                return new String(bytes, StandardCharsets.UTF_8);
+            }
+            return "";
         } catch (Exception e) {
             log.error("S3 최종 리포트 다운로드 실패 (URL: {}): {}", url, e.getMessage());
-            return "리포트 내용을 불러오는 데 실패했습니다.";
+            return "# 로드 실패\n\n리포트 내용을 불러오는 데 실패했습니다. 관리자에게 문의하세요.";
         }
     }
 
     private String collectAllDailyReports(Long projectId) {
         List<DailyReportVO> reports = finalReportMapper.selectAllReportsByProjectId(projectId);
-        if (reports.isEmpty()) return "작성된 일일 리포트가 없습니다.";
+
+        if (reports.isEmpty()) {
+            return "작성된 일일 리포트가 없습니다.";
+        }
 
         StringBuilder aggregatedContent = new StringBuilder();
         RestTemplate restTemplate = new RestTemplate();
+
         aggregatedContent.append(String.format("=== Project ID: %d Daily Reports ===\n\n", projectId));
 
         for (DailyReportVO report : reports) {
             String date = report.getReportDate().toString();
             String s3Url = report.getContent();
+
             aggregatedContent.append(String.format("## Date: %s\n", date));
+
             try {
                 if (s3Url != null && s3Url.startsWith("http")) {
-                    String textContent = restTemplate.getForObject(s3Url, String.class);
-                    aggregatedContent.append(textContent).append("\n\n");
+                    // String.class 대신 byte[].class 사용
+                    byte[] bytes = restTemplate.getForObject(s3Url, byte[].class);
+                    if (bytes != null) {
+                        String textContent = new String(bytes, StandardCharsets.UTF_8);
+                        aggregatedContent.append(textContent).append("\n\n");
+                    }
                 } else {
                     aggregatedContent.append(s3Url).append("\n\n");
                 }
             } catch (Exception e) {
-                log.error("일일 리포트 로드 실패: {}", e.getMessage());
+                log.error("일일 리포트 로드 실패 (ID: {}): {}", report.getReportId(), e.getMessage());
                 aggregatedContent.append("(내용 로드 실패)\n\n");
             }
         }
+
         return aggregatedContent.toString();
     }
 
