@@ -20,6 +20,7 @@ public class IssueDetailResponseDTO {
     private Integer priority;
     private LocalDate dueDate;
     private String createdBy;
+    private String creatorName;
     private LocalDateTime createdAt;
     private LocalDateTime finishedAt;
     private List<AssigneeInfoDTO> assignees; // 담당자 정보 리스트

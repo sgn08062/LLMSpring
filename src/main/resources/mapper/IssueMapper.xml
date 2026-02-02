@@ -22,10 +22,19 @@
 
     <select id="selectIssueById" resultType="com.example.LlmSpring.issue.IssueVO">
         SELECT
-            issue_id, project_id, title, description, status,
-            priority, due_date, created_by, created_at, archived_at
-        FROM Issue
-        WHERE issue_id = #{issueId}
+            i.issue_id,
+            i.project_id,
+            i.title,
+            i.description,
+            i.status,
+            i.priority,
+            i.due_date,
+            i.created_by,
+            i.created_at,
+            i.finished_at,  i.archived_at,
+            u.name AS creatorName  FROM Issue i
+                                            LEFT JOIN User u ON i.created_by = u.user_id
+        WHERE i.issue_id = #{issueId}
     </select>
 
     <update id="updateIssueArchived">
@@ -87,8 +96,9 @@
         <result property="dueDate" column="due_date"/>
         <result property="createdBy" column="created_by"/>
         <result property="createdAt" column="created_at"/>
-        <collection property="assignees" ofType="string" javaType="list">
-            <result column="assignee_user_id"/>
+        <collection property="assignees" ofType="com.example.LlmSpring.issue.response.IssueListResponseDTO$SimpleAssignee">
+            <result property="userId" column="assignee_id"/>
+            <result property="userName" column="assignee_name"/>
         </collection>
     </resultMap>
 
@@ -101,12 +111,13 @@
         i.due_date,
         i.created_by,
         i.created_at,
-        ia.user_id AS assignee_user_id
-        FROM Issue i
+        u.user_id AS assignee_id,   u.name    AS assignee_name  FROM Issue i
         LEFT JOIN Issue_Assignee ia ON i.issue_id = ia.issue_id
+        LEFT JOIN User u ON ia.user_id = u.user_id
         <where>
             i.project_id = #{projectId}
             AND i.archived_at IS NULL
+
             <if test="status != null and status != ''">
                 AND i.status = #{status}
             </if>
@@ -118,6 +129,18 @@
                 SELECT 1 FROM Issue_Assignee sub_ia
                 WHERE sub_ia.issue_id = i.issue_id AND sub_ia.user_id = #{assigneeId}
                 )
+            </if>
+            <if test="createdStart != null and createdStart != ''">
+                AND i.created_at >= #{createdStart}
+            </if>
+            <if test="createdEnd != null and createdEnd != ''">
+                AND i.created_at &lt;= CONCAT(#{createdEnd}, ' 23:59:59')
+            </if>
+            <if test="dueStart != null and dueStart != ''">
+                AND i.due_date >= #{dueStart}
+            </if>
+            <if test="dueEnd != null and dueEnd != ''">
+                AND i.due_date &lt;= CONCAT(#{dueEnd}, ' 23:59:59')
             </if>
         </where>
         ORDER BY
@@ -135,5 +158,27 @@
                  JOIN User u ON ia.user_id = u.user_id
         WHERE ia.issue_id = #{issueId}
     </select>
+
+    <update id="updateIssue">
+        UPDATE Issue
+        <set>
+            <if test="dto.title != null">
+                title = #{dto.title},
+            </if>
+            <if test="dto.description != null">
+                description = #{dto.description},
+            </if>
+            <if test="dto.status != null">
+                status = #{dto.status},
+            </if>
+            <if test="dto.priority != null">
+                priority = #{dto.priority},
+            </if>
+            <if test="dto.dueDate != null">
+                due_date = #{dto.dueDate},
+            </if>
+        </set>
+        WHERE issue_id = #{issueId}
+    </update>
 
 </mapper>

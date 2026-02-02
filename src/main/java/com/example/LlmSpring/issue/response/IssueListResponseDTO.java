@@ -24,5 +24,13 @@ public class IssueListResponseDTO {
     private LocalDate dueDate;
     private String createdBy;
     private LocalDateTime createdAt;
-    private List<String> assignees;
+    private List<SimpleAssignee> assignees;
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SimpleAssignee {
+        private String userId;
+        private String userName; // 이름 정보 추가
+    }
 }

@@ -1,13 +1,17 @@
 package com.example.LlmSpring.projectMember.response;
 
 import java.time.LocalDateTime;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Setter
 @Getter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ProjectMemberResponseDTO {
     private String userId;     // 사용자 ID
     private String name;       // 사용자 이름 (User 테이블 조인)

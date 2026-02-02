@@ -196,4 +196,22 @@ public class ProjectMemberController {
         }
     }
 
+    /**
+     * [이슈 담당자 지정용 멤버 목록 조회 API]
+     * - 프로젝트의 ACTIVE 상태인 멤버만 반환합니다.
+     */
+    @GetMapping("/{projectId}/members/assignees")
+    public ResponseEntity<?> getIssueAssigneeMembers(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable("projectId") int projectId) {
+
+        String token = authHeader.replace("Bearer ", "");
+        String userId = jwtService.verifyTokenAndUserId(token);
+
+        // 새로운 서비스 메서드 호출
+        List<ProjectMemberResponseDTO> members = projectMemberService.getIssueAssigneeMemberList(projectId, userId);
+
+        return ResponseEntity.ok(members);
+    }
+
 }

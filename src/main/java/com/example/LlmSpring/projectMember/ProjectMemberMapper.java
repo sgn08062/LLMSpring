@@ -44,4 +44,7 @@ public interface ProjectMemberMapper {
 
     // 6-2. 초대 거절
     void declineInvitation(@Param("projectId") int projectId, @Param("userId") String userId);
+
+    // 이슈 담당자용: ACTIVE 멤버만 조회
+    List<ProjectMemberResponseDTO> selectActiveMembersByProjectId(@Param("projectId") int projectId);
 }

@@ -1,7 +1,9 @@
 package com.example.LlmSpring.alarm;
 
 import com.example.LlmSpring.project.ProjectMapper;
+import com.example.LlmSpring.project.ProjectVO;
 import com.example.LlmSpring.user.UserMapper;
+import com.example.LlmSpring.user.UserVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 @RequiredArgsConstructor
 public class AlarmServiceImpl implements AlarmService {
+
     private final AlarmMapper alarmMapper;
     private final UserMapper userMapper;
     private final ProjectMapper projectMapper;
@@ -59,6 +62,47 @@ public class AlarmServiceImpl implements AlarmService {
                         .build();
 
         createAlarm(alarmVO);
+    }
+
+    @Override
+    @Transactional
+    public void sendIssueAssignAlarm(String senderId, String receiverId, int projectId, int issueId, String issueTitle) {
+        // 1. 자기 자신에게는 알림 보내지 않음
+        if (senderId.equals(receiverId)) {
+            return;
+        }
+
+        // 2. 정보 조회 (보낸 사람 이름, 프로젝트 이름)
+        String senderName = userMapper.getUserName(senderId);
+        if (senderName.isEmpty()) {
+            return;
+        }
+        String projectName = projectMapper.getProjectName(projectId);
+        if (projectName.isEmpty()) {
+            return;
+        }
+
+        // 3. 메시지 생성
+        // 포맷: [프로젝트명] 홍길동님이 '이슈 제목' 이슈를 배정했습니다.
+        String content = String.format("[%s] %s님이 '%s' 이슈를 배정했습니다.",
+                projectName, senderName, issueTitle);
+
+        // 4. URL 생성 (대시보드로 이동 + 이슈 모달 트리거용 파라미터)
+        String url = String.format("/project/%d/dashboard?issueId=%d", projectId, issueId);
+
+        // 5. DB 저장
+        AlarmVO alarm = AlarmVO.builder()
+                .userId(receiverId)      // 받는 사람
+                .senderId(senderId)      // 보낸 사람
+                .projectId(projectId)
+                .type("TASK_ASSIGN")     // 알림 타입
+                .referenceId(issueId)    // 참조 ID (이슈 ID)
+                .content(content)
+                .url(url)
+                .isRead(false)
+                .build();
+
+        alarmMapper.insertAlarm(alarm);
     }
 
     @Override

@@ -1,5 +1,6 @@
 package com.example.LlmSpring.projectMember;
 
+import com.example.LlmSpring.alarm.AlarmService;
 import com.example.LlmSpring.projectMember.request.ProjectMemberInviteRequestDTO;
 import com.example.LlmSpring.projectMember.request.ProjectMemberRemoveRequestDTO;
 import com.example.LlmSpring.projectMember.request.ProjectMemberRoleRequestDTO;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProjectMemberServiceImpl implements ProjectMemberService {
 
     private final ProjectMemberMapper projectMemberMapper;
+    private final AlarmService alarmService;
 
     // 프로젝트 멤버 목록 조회 구현체
     @Override
@@ -61,6 +63,8 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
             ProjectMemberVO newMember = ProjectMemberVO.builder()
                     .projectId(projectId)
                     .userId(inviteeId)
+                    .role("MEMBER")
+                    .status("INVITED")
                     .build();
             projectMemberMapper.insertMember(newMember);
         } else if (existingMember.getDeletedAt() == null) {
@@ -70,6 +74,10 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
             // Case C: 이전에 참여했다가 나간(Soft Delete) 경우 -> UPDATE
             projectMemberMapper.updateMemberToInvited(projectId, inviteeId);
         }
+
+        // 알림 전송 로직 추가 (DB 반영 성공 후 실행됨)
+        alarmService.sendInviteAlarm(inviterId, inviteeId, projectId);
+
     }
 
     // 프로젝트 멤버 역할 변경 구현체
@@ -242,4 +250,26 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
         // 2. 거절 실행 (deleted_at 업데이트)
         projectMemberMapper.declineInvitation(projectId, userId);
     }
+
+    // ACTIVE 상태의 프로젝트 멤버 목록 반환
+    @Override
+    public List<ProjectMemberResponseDTO> getIssueAssigneeMemberList(int projectId, String userId) {
+        // 1. 요청자가 프로젝트의 활동 중인(ACTIVE) 멤버인지 확인
+        if (!projectMemberMapper.existsActiveMember(projectId, userId)) {
+            throw new RuntimeException("프로젝트 멤버만 조회할 수 있습니다.");
+        }
+
+        // 2. ACTIVE 상태인 멤버만 조회하는 전용 매퍼 호출
+        List<ProjectMemberResponseDTO> members = projectMemberMapper.selectActiveMembersByProjectId(projectId);
+
+        // 3. 본인(me) 표시 로직 (UI 편의성 위함)
+        for (ProjectMemberResponseDTO member : members) {
+            if (member.getUserId().equals(userId)) {
+                member.setStatus("me"); // ACTIVE 상태를 덮어쓰지만, 어차피 목록엔 ACTIVE만 있으므로 식별용으로 사용
+            }
+        }
+
+        return members;
+    }
+
 }

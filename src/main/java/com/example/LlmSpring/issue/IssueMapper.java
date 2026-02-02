@@ -1,5 +1,6 @@
 package com.example.LlmSpring.issue;
 
+import com.example.LlmSpring.issue.request.IssueUpdateRequestDTO;
 import com.example.LlmSpring.issue.response.IssueDetailResponseDTO;
 import com.example.LlmSpring.issue.response.IssueListResponseDTO;
 import java.util.List;
@@ -40,12 +41,21 @@ public interface IssueMapper {
     // 5. 이슈 내용 부분 수정
     void updateIssuePartial(IssueVO updateVo);
 
+    // 이슈 수정 연결용 API
+    void updateIssue(@Param("issueId") int issueId, @Param("dto") IssueUpdateRequestDTO dto);
+
     // 6. 목록 조회 (필터 및 정렬)
     List<IssueListResponseDTO> selectIssueList(
             @Param("projectId") int projectId,
             @Param("status") String status,
             @Param("priority") Integer priority,
             @Param("assigneeId") String assigneeId,
+            // 추가된 날짜 파라미터들
+            @Param("createdStart") String createdStart,
+            @Param("createdEnd") String createdEnd,
+            @Param("dueStart") String dueStart,
+            @Param("dueEnd") String dueEnd,
+            // 정렬
             @Param("sortColumn") String sortColumn,
             @Param("sortDirection") String sortDirection
     );

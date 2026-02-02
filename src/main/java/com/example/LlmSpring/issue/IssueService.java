@@ -24,8 +24,12 @@ public interface IssueService {
     void updateIssue(int projectId, int issueId, String userId, IssueUpdateRequestDTO dto);
 
     // 이슈 목록 조회
-    List<IssueListResponseDTO> getIssueList(int projectId, String userId, String status, Integer priority, String assigneeId, String sort);
+    List<IssueListResponseDTO> getIssueList(int projectId, String userId, String status, Integer priority, String assigneeId,
+                                            String createdStart, String createdEnd, String dueStart, String dueEnd, String sort);
 
     // 이슈 상세 내용 조회
     IssueDetailResponseDTO getIssueDetail(int projectId, int issueId, String userId);
+
+
+
 }

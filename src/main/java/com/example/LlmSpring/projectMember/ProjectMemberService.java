@@ -17,6 +17,14 @@ public interface ProjectMemberService {
     List<ProjectMemberResponseDTO> getMemberList(int projectId, String userId);
 
     /**
+     * 이슈 담당자 설정 가능한 멤버 목록 조회
+     * @param projectId 대상 프로젝트 ID
+     * @param userId 조회를 요청하는 사용자 ID
+     * @return 멤버 상세 정보 리스트 (ACTIVE인 사용자만)
+     */
+    List<ProjectMemberResponseDTO> getIssueAssigneeMemberList(int projectId, String userId);
+
+    /**
      * 2. 프로젝트 멤버 초대
      * @param projectId 대상 프로젝트 ID
      * @param inviterId 초대를 시도하는 사용자(OWNER) ID

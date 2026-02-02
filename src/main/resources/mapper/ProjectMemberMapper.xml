@@ -108,4 +108,26 @@
         WHERE project_id = #{projectId}
           AND user_id = #{userId}
     </update>
+
+    <select id="selectActiveMembersByProjectId" resultType="com.example.LlmSpring.projectMember.response.ProjectMemberResponseDTO">
+        SELECT
+            u.user_id AS userId,
+            u.name AS name,
+            u.email AS email,
+            pm.role AS role,
+            pm.status AS status,
+            u.file_path AS profileImage
+        FROM ProjectMember pm
+                 JOIN User u ON pm.user_id = u.user_id
+        WHERE pm.project_id = #{projectId}
+          AND pm.status = 'ACTIVE'       AND pm.deleted_at IS NULL
+        ORDER BY
+            CASE pm.role
+                WHEN 'OWNER' THEN 1
+                WHEN 'ADMIN' THEN 2
+                ELSE 3
+                END,
+            pm.joined_at ASC
+    </select>
+
 </mapper>
