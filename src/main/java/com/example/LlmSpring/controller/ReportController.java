@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -112,26 +113,30 @@ public class ReportController {
     public ResponseEntity<Map<String, String>> createFinalReport(
             @RequestHeader("Authorization") String authHeader,
             @PathVariable Long projectId,
-            @RequestBody Map<String, String> body) {
+            @RequestBody Map<String, Object> body) {
 
         // 1. 토큰에서 User ID 추출
         String token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
         String userId = jwtService.verifyTokenAndUserId(token);
-
-        if (userId == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
+        if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         // 2. 리포트 타입 추출
-        String reportType = body.get("reportType");
+        String reportType = (String) body.get("reportType");
 
-        // 3. 서비스 호출 (조회 or 생성)
-        String finalReportContent = finalReportService.getOrCreateFinalReport(projectId, reportType, userId);
+        // 3. 섹션 리스트 안전하게 추출
+        List<String> selectedSections = new ArrayList<>();
 
-        // 4. 응답 반환
+        if (body.get("selectedSections") instanceof List<?>) {
+            for (Object obj : (List<?>) body.get("selectedSections")) {
+                selectedSections.add(obj.toString());
+            }
+        }
+
+        // 4. Service 호출
+        String content = finalReportService.getOrCreateFinalReport(projectId, reportType, selectedSections, userId);
+
         Map<String, String> response = new HashMap<>();
-        response.put("content", finalReportContent);
-
+        response.put("content", content);
         return ResponseEntity.ok(response);
     }
 
