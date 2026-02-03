@@ -11,6 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -30,27 +32,33 @@ public class FinalReportServiceImpl implements FinalReportService {
     @Override
     @Transactional
     public String getOrCreateFinalReport(Long projectId, String reportType, List<String> selectedSections, String userId) {
-        // 기존 리포트 확인 (이미 있으면 반환)
-        FinalReportVO existingReport = finalReportMapper.selectFinalReportByProjectId(projectId);
-        if (existingReport != null) {
-            return fetchContentFromS3(existingReport.getContent());
-        }
-
         // 1. 데이터 수집 (일일 리포트 모음)
         String aggregatedContent = collectAllDailyReports(projectId);
 
-        // 2. 동적 프롬프트 생성 (유형별 톤앤매너 + 선택 섹션 조합)
+        // 2. 동적 프롬프트 생성
         String prompt = buildDynamicPrompt(reportType, selectedSections, aggregatedContent);
 
         // 3. AI 호출
         String generatedContent = callGemini(prompt);
 
-        // 4. S3 업로드 & DB 저장
-        String s3Url = s3Service.uploadTextContent("finalReport/FinalReport_" + projectId + ".md", generatedContent);
+        //  S3 파일명 생성 전략 적용
+        // 포맷: finalReport/FinalReport_P{projectId}_U{userId}_{yyyyMMddHHmmss}.md
+        // 예: finalReport/FinalReport_P10_Uuser123_20260203153000.md
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        String s3FileName = String.format("finalReport/FinalReport_P%d_U%s_%s.md", projectId, userId, timestamp);
 
+        // 4. S3 업로드
+        String s3Url = s3Service.uploadTextContent(s3FileName, generatedContent);
+
+        // 5. DB 저장
         FinalReportVO vo = new FinalReportVO();
         vo.setProjectId(projectId);
-        vo.setTitle(generateTitle(reportType));
+
+        // [수정 3] 제목 자동 생성: "리포트타입 (날짜 시간)" 형태
+        String displayDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+        String baseTitle = generateTitle(reportType);
+        vo.setTitle(baseTitle + " (" + displayDate + ")");
+
         vo.setContent(s3Url);
         vo.setStatus("DRAFT");
         vo.setCreatedBy(userId);
