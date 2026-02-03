@@ -8,8 +8,10 @@ import com.example.LlmSpring.util.JWTService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -21,6 +23,7 @@ public class TaskController {
 
     private final TaskService taskService;
     private final JWTService jwtService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     private String getUserId(String authHeader) {
         String token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
@@ -85,8 +88,14 @@ public class TaskController {
 
     // 6. 삭제
     @DeleteMapping("/{taskId}")
-    public ResponseEntity<Map<String, String>> deleteTask(@PathVariable Long taskId) {
-        taskService.deleteTask(taskId);
+    public ResponseEntity<Map<String, String>> deleteTask(
+            @RequestHeader("Authorization") String authHeader, // 1. 헤더 추가
+            @PathVariable Long taskId) {
+
+        String userId = getUserId(authHeader); // 2. 사용자 ID 추출
+        if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        taskService.deleteTask(taskId, userId); // 3. 서비스에 ID 전달
         return ResponseEntity.ok(Map.of("message", "Deleted"));
     }
 
@@ -140,10 +149,21 @@ public class TaskController {
             @RequestHeader("Authorization") String authHeader,
             @PathVariable Long taskId,
             @RequestBody Map<String, String> body) {
+
         String userId = getUserId(authHeader);
         if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
-        taskService.addChat(taskId, userId, body.get("content"));
+        String content = body.get("content");
+
+        taskService.addChat(taskId, userId, content);
+
+        Map<String, Object> chatMessage = new HashMap<>();
+        chatMessage.put("userId", userId);
+        chatMessage.put("content", content);
+        chatMessage.put("taskId", taskId);
+
+        messagingTemplate.convertAndSend("/sub/tasks/" + taskId, chatMessage);
+
         return ResponseEntity.ok("Chat added");
     }
 

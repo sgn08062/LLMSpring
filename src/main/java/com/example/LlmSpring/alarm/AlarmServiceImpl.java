@@ -163,4 +163,62 @@ public class AlarmServiceImpl implements AlarmService {
 
         return emitter;
     }
+
+    @Override
+    @Transactional
+    public void sendTaskAlarm(String senderId, List<String> receiverIds, int projectId, Long taskId, String taskTitle, String type) {
+        // 1. 보낸 사람 정보 조회
+        String senderName = userMapper.getUserName(senderId);
+        if (senderName == null) return;
+
+        // 2. 프로젝트 정보 조회
+        String projectName = projectMapper.getProjectName(projectId);
+        if (projectName == null) return;
+
+        // 3. 알림 내용 및 URL 설정
+        String content = "";
+        String url = String.format("/projectDetail?projectId=%d&taskId=%d", projectId, taskId);
+
+        switch (type) {
+            case "CREATE":
+                content = String.format("[%s] %s님이 새 업무 '%s'를 배정했습니다.", projectName, senderName, taskTitle);
+                break;
+            case "UPDATE":
+                content = String.format("[%s] %s님이 업무 '%s'의 내용을 수정했습니다.", projectName, senderName, taskTitle);
+                break;
+            case "STATUS":
+                content = String.format("[%s] %s님이 업무 '%s'의 상태를 변경했습니다.", projectName, senderName, taskTitle);
+                break;
+            case "DELETE":
+                content = String.format("[%s] %s님이 업무 '%s'를 삭제했습니다.", projectName, senderName, taskTitle);
+                url = String.format("/projectDetail/%d", projectId);
+                break;
+            case "CHECKLIST":
+                content = String.format("[%s] %s님이 업무 '%s'에 체크리스트를 추가하였습니다.", projectName, senderName, taskTitle);
+                break;
+            case "CHAT":
+                content = String.format("[%s] %s님이 업무 '%s'에 댓글을 남겼습니다.", projectName, senderName, taskTitle);
+                break;
+        }
+
+        // 4. 수신자 목록 순회하며 알림 전송
+        if (receiverIds != null && !receiverIds.isEmpty()) {
+            for (String receiverId : receiverIds) {
+                if (receiverId.equals(senderId)) continue;
+
+                AlarmVO alarm = AlarmVO.builder()
+                        .userId(receiverId)
+                        .senderId(senderId)
+                        .projectId(projectId)
+                        .type("TASK_" + type)
+                        .referenceId(taskId.intValue())
+                        .content(content)
+                        .url(url)
+                        .isRead(false)
+                        .build();
+
+                createAlarm(alarm);
+            }
+        }
+    }
 }
