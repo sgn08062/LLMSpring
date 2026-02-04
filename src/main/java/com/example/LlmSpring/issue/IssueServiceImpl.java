@@ -32,6 +32,7 @@ public class IssueServiceImpl implements IssueService {
 
         // 1. 권한 확인: 프로젝트 멤버인지 확인
         String role = projectMapper.getProjectRole(projectId, userId);
+
         if (role == null) {
             throw new RuntimeException("프로젝트 멤버만 이슈를 생성할 수 있습니다.");
         }
@@ -39,6 +40,7 @@ public class IssueServiceImpl implements IssueService {
         // 2. 담당자 유효성 검증 (프로젝트 멤버이면서, ACTIVE 상태이면서, deleted_at이 null인 경우만 허용)
         List<String> assigneeIds = dto.getAssigneeIds();
         if (assigneeIds != null && !assigneeIds.isEmpty()) {
+
             // DB에서 해당 프로젝트의 ACTIVE 멤버 중 assigneeIds에 포함된 인원 수를 카운트
             int activeMemberCount = projectMapper.countActiveProjectMembers(projectId, assigneeIds);
 
@@ -67,6 +69,9 @@ public class IssueServiceImpl implements IssueService {
                 .priority(dto.getPriority())
                 .dueDate(dto.getDueDate())
                 .createdBy(userId)
+                .linkedCommitSha(dto.getLinkedCommitSha())
+                .linkedCommitMessage(dto.getLinkedCommitMessage())
+                .linkedCommitUrl(dto.getLinkedCommitUrl())
                 .build();
 
         issueMapper.insertIssue(issue);
@@ -328,6 +333,9 @@ public class IssueServiceImpl implements IssueService {
                 .priority(dto.getPriority())
                 .dueDate(dto.getDueDate())
                 .status(targetStatus) // 보정된 상태값 사용
+                .linkedCommitSha(dto.getLinkedCommitSha())
+                .linkedCommitMessage(dto.getLinkedCommitMessage())
+                .linkedCommitUrl(dto.getLinkedCommitUrl())
                 .build();
 
         issueMapper.updateIssuePartial(updateVo);
@@ -391,6 +399,9 @@ public class IssueServiceImpl implements IssueService {
                 .createdAt(issue.getCreatedAt())
                 .finishedAt(issue.getFinishedAt())
                 .assignees(assignees)
+                .linkedCommitSha(issue.getLinkedCommitSha())
+                .linkedCommitMessage(issue.getLinkedCommitMessage())
+                .linkedCommitUrl(issue.getLinkedCommitUrl())
                 .build();
     }
 

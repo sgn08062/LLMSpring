@@ -22,6 +22,12 @@ public interface SidebarMapper {
     //4. 프로젝트 사이드바: 내 잔여 업무 목록 (상위 5개)
     List<ProjectSidebarResponseDTO.SidebarTaskDTO> selectMyActiveTasks(@Param("projectId") Long projectId, @Param("userId") String userId);
 
+    //5. 프로젝트 사이드바: 내 이슈 업무 목록 (상위 5개)
+    List<ProjectSidebarResponseDTO.SidebarIssueDTO> selectMyActiveIssues(
+            @Param("projectId") Long projectId,
+            @Param("userId") String userId
+    );
+
     // 즐겨찾기 관련 메서드
     // 1. 이미 즐겨찾기 되어있는지 확인
     int existsFavorite(@Param("projectId") Long projectId, @Param("userId") String userId);

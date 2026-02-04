@@ -51,6 +51,21 @@
             LIMIT 100
     </select>
 
+    <select id="selectMyActiveIssues" resultType="com.example.LlmSpring.sidebar.response.ProjectSidebarResponseDTO$SidebarIssueDTO">
+        SELECT
+            i.issue_id AS issueId,
+            i.title    AS title,
+            i.status   AS status,
+            i.priority AS priority
+        FROM Issue i
+                 INNER JOIN Issue_Assignee ia ON i.issue_id = ia.issue_id
+        WHERE i.project_id = #{projectId}
+          AND ia.user_id = #{userId}
+          AND i.status != 'DONE'
+          AND i.archived_at IS NULL
+        ORDER BY i.priority ASC, i.due_date ASC  LIMIT 5
+    </select>
+
     <select id="existsFavorite" resultType="int">
         SELECT COUNT(*)
         FROM ProjectMember

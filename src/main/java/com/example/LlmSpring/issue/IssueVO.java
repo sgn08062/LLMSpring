@@ -27,5 +27,8 @@ public class IssueVO {
     private LocalDateTime createdAt;
     private LocalDateTime finishedAt; // DONE 상태 변경 시 기록
     private LocalDateTime archivedAt; // 아카이브 시 기록
+    private String linkedCommitSha;
+    private String linkedCommitMessage;
+    private String linkedCommitUrl;
     private String creatorName; // 작성자 이름
 }

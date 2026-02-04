@@ -24,6 +24,9 @@ public class IssueDetailResponseDTO {
     private LocalDateTime createdAt;
     private LocalDateTime finishedAt;
     private List<AssigneeInfoDTO> assignees; // 담당자 정보 리스트
+    private String linkedCommitSha;
+    private String linkedCommitMessage;
+    private String linkedCommitUrl;
 
     @Getter
     @Builder

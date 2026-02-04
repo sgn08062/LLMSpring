@@ -6,10 +6,29 @@
 
     <insert id="insertIssue" useGeneratedKeys="true" keyProperty="issueId">
         INSERT INTO Issue (
-            project_id, title, description, status, priority, due_date, created_by
-        ) VALUES (
-                     #{projectId}, #{title}, #{description}, #{status}, #{priority}, #{dueDate}, #{createdBy}
-                 )
+            project_id,
+            title,
+            description,
+            status,
+            priority,
+            due_date,
+            created_by,
+            linked_commit_sha,
+            linked_commit_message,
+            linked_commit_url
+        )
+        VALUES (
+             #{projectId},
+             #{title},
+             #{description},
+             #{status},
+             #{priority},
+             #{dueDate},
+             #{createdBy},
+             #{linkedCommitSha},
+             #{linkedCommitMessage},
+             #{linkedCommitUrl}
+        )
     </insert>
 
     <insert id="insertIssueAssignees">
@@ -31,9 +50,16 @@
             i.due_date,
             i.created_by,
             i.created_at,
-            i.finished_at,  i.archived_at,
-            u.name AS creatorName  FROM Issue i
-                                            LEFT JOIN User u ON i.created_by = u.user_id
+            i.finished_at,
+            i.archived_at,
+            u.name AS creatorName,
+
+            i.linked_commit_sha AS linkedCommitSha,
+            i.linked_commit_message AS linkedCommitMessage,
+            i.linked_commit_url AS linkedCommitUrl
+
+        FROM Issue i
+                 LEFT JOIN User u ON i.created_by = u.user_id
         WHERE i.issue_id = #{issueId}
     </select>
 
@@ -83,6 +109,10 @@
             <if test="status != null">status = #{status},</if>
             <if test="status == 'DONE'">finished_at = CURRENT_TIMESTAMP,</if>
             <if test="status != null and status != 'DONE'">finished_at = NULL,</if>
+
+            <if test="linkedCommitSha != null">linked_commit_sha = #{linkedCommitSha},</if>
+            <if test="linkedCommitMessage != null">linked_commit_message = #{linkedCommitMessage},</if>
+            <if test="linkedCommitUrl != null">linked_commit_url = #{linkedCommitUrl},</if>
         </set>
         WHERE issue_id = #{issueId}
         AND archived_at IS NULL
@@ -162,23 +192,17 @@
     <update id="updateIssue">
         UPDATE Issue
         <set>
-            <if test="dto.title != null">
-                title = #{dto.title},
-            </if>
-            <if test="dto.description != null">
-                description = #{dto.description},
-            </if>
-            <if test="dto.status != null">
-                status = #{dto.status},
-            </if>
-            <if test="dto.priority != null">
-                priority = #{dto.priority},
-            </if>
-            <if test="dto.dueDate != null">
-                due_date = #{dto.dueDate},
-            </if>
+            <if test="title != null">title = #{title},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="priority != null">priority = #{priority},</if>
+            <if test="dueDate != null">due_date = #{dueDate},</if>
+
+            <if test="linkedCommitSha != null">linked_commit_sha = #{linkedCommitSha},</if>
+            <if test="linkedCommitMessage != null">linked_commit_message = #{linkedCommitMessage},</if>
+            <if test="linkedCommitUrl != null">linked_commit_url = #{linkedCommitUrl},</if>
         </set>
-        WHERE issue_id = #{issueId}
+        WHERE issue_id = #{issueId} AND project_id = #{projectId}
     </update>
 
 </mapper>

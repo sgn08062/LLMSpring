@@ -13,6 +13,7 @@ public class ProjectSidebarResponseDTO {
     private String dailyReportTime;
     private boolean isReportWritten; // 오늘 리포트 썼는지 (true/false)
     private List<SidebarTaskDTO> myTasks;
+    private List<SidebarIssueDTO> myIssues;
 
     @Data
     public static class SidebarTaskDTO {
@@ -21,5 +22,13 @@ public class ProjectSidebarResponseDTO {
         private String status;
         private Integer priority;
         private LocalDateTime dueDate;
+    }
+
+    @Data
+    public static class SidebarIssueDTO {
+        private Long issueId;
+        private String title;
+        private String status;
+        private String priority;
     }
 }

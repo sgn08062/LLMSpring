@@ -55,6 +55,9 @@ public class SidebarService {
         //내 잔여 업무 목록
         response.setMyTasks(sidebarMapper.selectMyActiveTasks(projectId, userId));
 
+        // 내 잔여 이슈 목록 조회 및 설정
+        response.setMyIssues(sidebarMapper.selectMyActiveIssues(projectId, userId));
+
         return response;
     }
 

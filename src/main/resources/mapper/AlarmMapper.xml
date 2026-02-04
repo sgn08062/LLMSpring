@@ -71,4 +71,17 @@
           AND deleted_at IS NULL
     </update>
 
+    <insert id="insertAlarmsBatch">
+        INSERT INTO Alarm (
+        user_id, sender_id, project_id, type,
+        content, url, is_read, created_at
+        ) VALUES
+        <foreach collection="alarms" item="item" separator=",">
+            (
+            #{item.userId}, #{item.senderId}, #{item.projectId}, #{item.type},
+            #{item.content}, #{item.url}, FALSE, NOW()
+            )
+        </foreach>
+    </insert>
+
 </mapper>
