@@ -372,6 +372,84 @@ public class DailyReportService {
         }
     }
 
+    // 1.5 GEMINI API 공통 호출
+    private String callGeminiApi(String prompt) {
+        String geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + geminiApiKey;
+
+        Map<String, Object> requestBody = new HashMap<>();
+        Map<String, Object> content = new HashMap<>();
+        Map<String, Object> parts = new HashMap<>();
+
+        parts.put("text", prompt);
+        content.put("parts", Collections.singletonList(parts));
+        requestBody.put("contents", Collections.singletonList(content));
+
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+
+        try {
+            ResponseEntity<Map> response = restTemplate.exchange(geminiUrl, HttpMethod.POST, entity, Map.class);
+            Map<String, Object> responseBody = response.getBody();
+
+            if (responseBody != null && responseBody.containsKey("candidates")) {
+                List<Map<String, Object>> candidates = (List<Map<String, Object>>) responseBody.get("candidates");
+                if (!candidates.isEmpty()) {
+                    Map<String, Object> resContent = (Map<String, Object>) candidates.get(0).get("content");
+                    List<Map<String, Object>> resParts = (List<Map<String, Object>>) resContent.get("parts");
+                    return (String) resParts.get(0).get("text");
+                }
+            }
+        } catch (Exception e) {
+            log.error("Gemini API Error", e);
+        }
+        return "AI 응답 오류가 발생했습니다.";
+    }
+
+    // 1.6 내부 데이터 전달
+    private static class GeneratedContent {
+        String content;
+        int commitCount;
+        public GeneratedContent(String content, int commitCount) {
+            this.content = content;
+            this.commitCount = commitCount;
+        }
+    }
+
+    // 1.7 GITHUB 분석 및 AI 요약
+    private GeneratedContent getGeneratedContentFromGithub(Long projectId, String userId) {
+        String aiContent = "금일 진행한 업무 내용을 작성해주세요.";
+        int commitCount = 0;
+
+        try {
+            UserVO user = userMapper.getUserInfo(userId);
+            ProjectVO project = projectMapper.selectProjectById(projectId);
+
+            if (user != null && project != null && user.getGithubToken() != null && project.getGithubRepoUrl() != null) {
+                String decryptedToken = encryptionUtil.decrypt(user.getGithubToken());
+                String realGithubUsername = fetchGithubUsername(decryptedToken);
+
+                if (realGithubUsername != null) {
+                    List<Map<String, Object>> commits = fetchAllMyRecentCommits(
+                            project.getGithubRepoUrl(), realGithubUsername, decryptedToken
+                    );
+                    commitCount = commits.size();
+
+                    if (!commits.isEmpty()) {
+                        aiContent = generateAiSummary(commits);
+                    } else {
+                        aiContent = "### 🚫 금일 커밋 내역 없음\n- '" + realGithubUsername + "' 계정으로 조회된 최근 24시간 커밋이 없습니다.";
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("AI 리포트 생성 실패", e);
+            aiContent = "AI 자동 생성에 실패했습니다. (오류: " + e.getMessage() + ")";
+        }
+        return new GeneratedContent(aiContent, commitCount);
+    }
+
     //2. 리포트 상세 조회
     public DailyReportResponseDTO getReportDetail(Long reportId) {
         DailyReportVO vo = dailyReportMapper.selectReportById(reportId);
@@ -425,8 +503,24 @@ public class DailyReportService {
     }
 
     //7. 리포트 수동 재생성
+    @Transactional
     public DailyReportResponseDTO regenerateReport(Long reportId) {
-        // TODO: Git 분석 로직 호출 및 Content 갱신
+        DailyReportVO existingVO = dailyReportMapper.selectReportById(reportId);
+        if (existingVO == null) throw new IllegalArgumentException("Report not found");
+
+        // 1. GitHub 재분석
+        GeneratedContent generated = getGeneratedContentFromGithub(existingVO.getProjectId(), existingVO.getUserId());
+
+        // 2. S3 덮어쓰기
+        String s3Url = s3Service.uploadTextContent(existingVO.getDrFilePath(), generated.content);
+
+        // 3. DB 업데이트
+        existingVO.setCommitCount(generated.commitCount);
+        existingVO.setContent(s3Url);
+        existingVO.setOriginalContent(true);
+
+        dailyReportMapper.updateReport(existingVO);
+
         return getReportDetail(reportId);
     }
 
@@ -446,25 +540,38 @@ public class DailyReportService {
     //9. AI 채팅 전송
     @Transactional
     public Map<String, Object> sendChatToAI(Long reportId, String message, String currentContent) {
-        //User 메시지 저장
+        // User 메시지 저장
         DailyReportChatLogVO userLog = new DailyReportChatLogVO();
         userLog.setReportId(reportId);
-        userLog.setRole(true); // User
+        userLog.setRole(true);
         userLog.setMessage(message);
         dailyReportMapper.insertChatLog(userLog);
 
-        // TODO: 실제 AI API 호출
-        String aiReplyText = "AI 응답입니다: " + message + "에 대한 피드백...";
+        // 프롬프트 구성
+        String prompt = String.format("""
+            당신은 개발자의 일일 리포트 작성을 돕는 AI 조수입니다.
+            
+            [현재 리포트 내용]
+            %s
+            
+            [사용자 요청]
+            %s
+            
+            요청에 맞춰 답변해주세요. 리포트 수정이 필요하면 구체적인 수정안을, 질문이면 답변을 제공하세요.
+            """, currentContent, message);
 
-        //AI 메시지 저장 (이 부분이 빠져 있었습니다!)
+        // AI 호출
+        String aiReplyText = callGeminiApi(prompt);
+
+        // AI 메시지 저장
         DailyReportChatLogVO aiLog = new DailyReportChatLogVO();
         aiLog.setReportId(reportId);
-        aiLog.setRole(false); // AI
+        aiLog.setRole(false);
         aiLog.setMessage(aiReplyText);
         aiLog.setIsApplied(false);
         dailyReportMapper.insertChatLog(aiLog);
 
-        //응답 반환
+        // 응답 반환
         Map<String, Object> response = new HashMap<>();
         response.put("reply", aiReplyText);
         return response;
