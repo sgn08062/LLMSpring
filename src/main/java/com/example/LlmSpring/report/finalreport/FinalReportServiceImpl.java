@@ -117,6 +117,37 @@ public class FinalReportServiceImpl implements FinalReportService {
         s3Service.deleteFile(oldS3Url);
     }
 
+    @Override
+    @Transactional
+    public Map<String, Object> createFinalReportManual(Long projectId, String userId, String title, String content) {
+        // 1. S3 파일명 생성 (중복 방지 타임스탬프)
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        // 파일명에 '_manual'을 붙여서 AI 생성본과 구분
+        String s3FileName = String.format("finalReport/FinalReport_P%d_U%s_%s_manual.md", projectId, userId, timestamp);
+
+        // 2. S3 업로드
+        String s3Url = s3Service.uploadTextContent(s3FileName, content);
+
+        // 3. DB 저장 (새로운 객체 생성)
+        FinalReportVO vo = new FinalReportVO();
+        vo.setProjectId(projectId);
+        vo.setTitle(title); // 사용자가 입력한 제목 그대로 저장
+        vo.setContent(s3Url);
+        vo.setStatus("DRAFT");
+        vo.setCreatedBy(userId);
+
+        // insert 시 useGeneratedKeys="true" 덕분에 vo.getFinalReportId()에 ID가 채워짐
+        finalReportMapper.insertFinalReport(vo);
+
+        // 4. 결과 반환 (프론트엔드 상태 업데이트용)
+        Map<String, Object> result = new HashMap<>();
+        result.put("finalReportId", vo.getFinalReportId());
+        result.put("title", vo.getTitle());
+        result.put("content", content);
+
+        return result;
+    }
+
     private String fetchContentFromS3(String url) {
         if (url == null || !url.startsWith("http")) {
             return url;

@@ -178,4 +178,26 @@ public class ReportController {
 
         return ResponseEntity.ok("리포트가 성공적으로 저장되었습니다.");
     }
+
+    // 16. 다른 이름으로 저장
+    @PostMapping("/final-reports/save-as")
+    public ResponseEntity<Map<String, Object>> saveFinalReportAs(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long projectId,
+            @RequestBody Map<String, Object> body
+    ){
+        String token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
+        String userId = jwtService.verifyTokenAndUserId(token);
+        if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        Object titleObj = body.get("title");
+        String title = titleObj != null ? titleObj.toString() : "제목 없음";
+
+        Object contentObj = body.get("content");
+        String content = contentObj != null ? contentObj.toString() : "";
+
+        Map<String, Object> response = finalReportService.createFinalReportManual(projectId, userId, title, content);
+
+        return ResponseEntity.ok(response);
+    }
 }
