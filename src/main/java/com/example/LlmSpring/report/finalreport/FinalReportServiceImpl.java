@@ -340,7 +340,7 @@ public class FinalReportServiceImpl implements FinalReportService {
     }
 
     private String callGemini(String prompt) {
-        String geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + geminiApiKey;
+        String geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-latest:generateContent?key=" + geminiApiKey;
 
         Map<String, Object> requestBody = new HashMap<>();
         Map<String, Object> content = new HashMap<>();

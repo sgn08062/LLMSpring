@@ -289,7 +289,7 @@ public class DailyReportService {
 
     // 1.4 GEMINI API 호출
     private String generateAiSummary(List<Map<String, Object>> commitData) {
-        String geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=" + geminiApiKey;
+        String geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-latest:generateContent?key=" + geminiApiKey;
 
         ObjectMapper objectMapper = new ObjectMapper();
         String jsonCommitData;
