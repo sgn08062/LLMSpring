@@ -13,4 +13,5 @@ public interface FinalReportMapper {
     int countFinalReportByProjectIdAndUserId(Long projectId, String userId);
     void insertFinalReport(FinalReportVO finalReportVO);
     void updateFinalReport(FinalReportVO vo);
+    void deleteFinalReport(Long finalReportId);
 }

@@ -8,4 +8,5 @@ public interface FinalReportService {
     List<FinalReportVO> getMyFinalReports(Long projectId, String userId);
     void updateFinalReport(Long finalReportId, String userId, String title, String content);
     Map<String, Object> createFinalReportManual(Long projectId, String userId, String title, String content);
+    void deleteFinalReport(Long finalReportId, String userId);
 }

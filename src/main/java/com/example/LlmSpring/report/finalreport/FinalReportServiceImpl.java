@@ -155,6 +155,27 @@ public class FinalReportServiceImpl implements FinalReportService {
         return result;
     }
 
+    @Override
+    @Transactional
+    public void deleteFinalReport(Long finalReportId, String userId) {
+        // 1. 리포트 조회
+        FinalReportVO report = finalReportMapper.selectFinalReportByProjectId(finalReportId); // 혹은 selectFinalReportByProjectId 등 기존 조회 메서드 활용
+        if (report == null) {
+            throw new IllegalArgumentException("존재하지 않는 리포트입니다.");
+        }
+
+        // 2. 권한 확인
+        if (!report.getCreatedBy().equals(userId)) {
+            throw new IllegalArgumentException("삭제 권한이 없습니다.");
+        }
+
+        // 3. S3 파일 삭제
+        s3Service.deleteFile(report.getContent());
+
+        // 4. DB 데이터 삭제
+        finalReportMapper.deleteFinalReport(finalReportId);
+    }
+
     private void checkReportLimit(Long projectId, String userId) {
         int myReportsCount = finalReportMapper.countFinalReportByProjectIdAndUserId(projectId, userId);
         if (myReportsCount >= MAX_REPORT_COUNT) {

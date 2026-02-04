@@ -212,4 +212,19 @@ public class ReportController {
                     .body(Map.of("message", "저장 중 오류가 발생했습니다."));
         }
     }
+
+    // 17. 최종 리포트 삭제
+    @DeleteMapping("/final-reports/{finalReportId}")
+    public ResponseEntity<String> deleteFinalReport(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long finalReportId) {
+
+        String token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
+        String userId = jwtService.verifyTokenAndUserId(token);
+        if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        finalReportService.deleteFinalReport(finalReportId, userId);
+
+        return ResponseEntity.ok("리포트가 삭제되었습니다.");
+    }
 }

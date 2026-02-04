@@ -44,4 +44,7 @@
             created_at = NOW() WHERE final_report_id = #{finalReportId}
     </update>
 
+    <delete id="deleteFinalReport">
+        DELETE FROM finalreport WHERE final_report_id = #{finalReportId}
+    </delete>
 </mapper>
