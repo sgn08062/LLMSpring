@@ -1,13 +1,17 @@
 package com.example.LlmSpring.controller;
 
-import com.example.LlmSpring.dailyreport.DailyReportService;
-import com.example.LlmSpring.dailyreport.response.DailyReportResponseDTO;
+import com.example.LlmSpring.report.dailyreport.DailyReportService;
+import com.example.LlmSpring.report.dailyreport.response.DailyReportResponseDTO;
+import com.example.LlmSpring.report.finalreport.FinalReportService;
+import com.example.LlmSpring.report.finalreport.FinalReportVO;
 import com.example.LlmSpring.util.JWTService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -18,6 +22,7 @@ import java.util.Map;
 public class ReportController {
 
     private final DailyReportService dailyReportService;
+    private final FinalReportService finalReportService;
     private final JWTService jwtService;
 
     private String getUserId(String authHeader) {
@@ -103,4 +108,123 @@ public class ReportController {
         dailyReportService.updateReportSettings(projectId, body);
     }
 
+    // 13. 최종 리포트 생성
+    @PostMapping("/final-reports")
+    public ResponseEntity<Map<String, String>> createFinalReport(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long projectId,
+            @RequestBody Map<String, Object> body) {
+
+        // 1. 토큰에서 User ID 추출
+        String token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
+        String userId = jwtService.verifyTokenAndUserId(token);
+        if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        // 2. 리포트 타입 추출
+        String reportType = (String) body.get("reportType");
+
+        // 3. 섹션 리스트 안전하게 추출
+        List<String> selectedSections = new ArrayList<>();
+
+        if (body.get("selectedSections") instanceof List<?>) {
+            for (Object obj : (List<?>) body.get("selectedSections")) {
+                selectedSections.add(obj.toString());
+            }
+        }
+
+        // 4. Service 호출
+        String content = finalReportService.getOrCreateFinalReport(projectId, reportType, selectedSections, userId);
+
+        Map<String, String> response = new HashMap<>();
+        response.put("content", content);
+        return ResponseEntity.ok(response);
+    }
+
+    // 14. 최종 리포트 메타데이터 조회
+    @GetMapping("/final-reports")
+    public ResponseEntity<List<FinalReportVO>> getMyFinalReports(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long projectId) {
+
+        // 1. 토큰에서 User ID 추출
+        String token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
+        String userId = jwtService.verifyTokenAndUserId(token);
+        if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        // 2. 서비스 호출 (List 반환)
+        List<FinalReportVO> reports = finalReportService.getMyFinalReports(projectId, userId);
+
+        return ResponseEntity.ok(reports);
+    }
+
+    // 15. 최종 리포트 수정
+    @PutMapping("/final-reports/{finalReportId}")
+    public ResponseEntity<String> updateFinalReport(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long finalReportId,
+            @RequestBody Map<String, Object> body
+    ){
+        String token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
+        String userId = jwtService.verifyTokenAndUserId(token);
+        if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        // 데이터 추출
+        Object titleObj = body.get("title");
+        String title = titleObj != null ? titleObj.toString() : "";
+        Object contentObj = body.get("content");
+        String content = contentObj != null ? contentObj.toString() : "";
+
+        finalReportService.updateFinalReport(finalReportId, userId, title, content);
+
+        return ResponseEntity.ok("리포트가 성공적으로 저장되었습니다.");
+    }
+
+    // 16. 다른 이름으로 저장
+    @PostMapping("/final-reports/save-as")
+    public ResponseEntity<Map<String, Object>> saveFinalReportAs(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long projectId,
+            @RequestBody Map<String, Object> body
+    ){
+        String token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
+        String userId = jwtService.verifyTokenAndUserId(token);
+        if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        Object titleObj = body.get("title");
+        String title = titleObj != null ? titleObj.toString() : "제목 없음";
+
+        Object contentObj = body.get("content");
+        String content = contentObj != null ? contentObj.toString() : "";
+
+        try {
+            // 서비스 호출
+            Map<String, Object> response = finalReportService.createFinalReportManual(projectId, userId, title, content);
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalArgumentException e) {
+            // [중요] 7개 제한에 걸렸을 때 400 Bad Request와 메시지 반환
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "저장 중 오류가 발생했습니다."));
+        }
+    }
+
+    // 17. 최종 리포트 삭제
+    @DeleteMapping("/final-reports/{finalReportId}")
+    public ResponseEntity<String> deleteFinalReport(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long finalReportId) {
+
+        String token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
+        String userId = jwtService.verifyTokenAndUserId(token);
+        if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        finalReportService.deleteFinalReport(finalReportId, userId);
+
+        return ResponseEntity.ok("리포트가 삭제되었습니다.");
+    }
 }

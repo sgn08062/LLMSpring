@@ -2,6 +2,7 @@ package com.example.LlmSpring.util;
 
 import io.awspring.cloud.s3.S3Template;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -12,6 +13,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class S3Service {
@@ -34,18 +36,6 @@ public class S3Service {
         return "https://" + bucketName + ".s3.ap-northeast-2.amazonaws.com/" + s3FileName;
     }
 
-    // 기존 이미지 삭제
-    public void deleteFile(String fileUrl){
-        try{
-            String splitStr = ".com/";
-            String fileName = fileUrl.substring(fileUrl.lastIndexOf(splitStr) + splitStr.length());
-
-            s3Template.deleteObject(bucketName, fileName);
-        }catch(Exception e){
-            System.out.println("S3 파일 삭제 실패: " + e.getMessage());
-        }
-    }
-
     //  텍스트 내용을 S3에 파일로 저장하고 URL 반환
     public String uploadTextContent(String path, String content) {
         // String을 InputStream으로 변환
@@ -57,5 +47,25 @@ public class S3Service {
 
         // 업로드 된 파일의 URL 반환
         return "https://" + bucketName + ".s3.ap-northeast-2.amazonaws.com/" + path;
+    }
+
+    // 3. S3 파일 삭제 (프로필 이미지, 리포트 공용)
+    public void deleteFile(String fileUrl){
+        if(fileUrl == null || fileUrl.isEmpty()) return;
+
+        try{
+            String splitStr = ".com/";
+            int index = fileUrl.lastIndexOf(splitStr);
+
+            if(index != -1){
+                String key = fileUrl.substring(index + splitStr.length());
+
+                // 삭제 수행
+                s3Template.deleteObject(bucketName, key);
+                log.info("S3 파일 삭제 완료: {}", key);
+            }
+        }catch(Exception e){
+            log.error("S3 파일 삭제 실패 (URL: {}): {}", fileUrl, e.getMessage());
+        }
     }
 }

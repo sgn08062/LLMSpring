@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.LlmSpring.report.finalreport.FinalReportMapper">
+
+    <select id="selectAllReportsByProjectId" resultType="com.example.LlmSpring.report.dailyreport.DailyReportVO">
+        SELECT * FROM DailyReport
+        WHERE project_id = #{projectId}
+        ORDER BY report_date ASC
+    </select>
+
+    <select id="selectFinalReportByProjectId" resultType="com.example.LlmSpring.report.finalreport.FinalReportVO">
+        SELECT * FROM FinalReport WHERE final_report_id = #{finalReportId}
+    </select>
+
+    <select id="selectAllFinalReportsByProjectAndUser" resultType="com.example.LlmSpring.report.finalreport.FinalReportVO">
+        SELECT *
+        FROM FinalReport
+        WHERE project_id = #{projectId}
+          AND created_by = #{userId}  ORDER BY created_at DESC
+    </select>
+
+    <select id="countFinalReportByProjectIdAndUserId">
+        SELECT COUNT(*)
+        FROM FinalReport
+        WHERE project_id = #{projectId}
+        AND created_by = #{userId}
+    </select>
+
+
+    <insert id="insertFinalReport" parameterType="com.example.LlmSpring.report.finalreport.FinalReportVO" useGeneratedKeys="true" keyProperty="finalReportId">
+        INSERT INTO FinalReport (
+            project_id, title, content, status, created_by, created_at, updated_at
+        ) VALUES (
+            #{projectId}, #{title}, #{content}, #{status}, #{createdBy}, NOW(), NOW()
+        )
+    </insert>
+
+    <update id="updateFinalReport">
+        UPDATE finalreport
+        SET title = #{title},
+            content = #{content},
+            created_at = NOW() WHERE final_report_id = #{finalReportId}
+    </update>
+
+    <delete id="deleteFinalReport">
+        DELETE FROM finalreport WHERE final_report_id = #{finalReportId}
+    </delete>
+</mapper>

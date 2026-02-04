@@ -1,4 +1,4 @@
-package com.example.LlmSpring.dailyreport;
+package com.example.LlmSpring.report.dailyreport;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;

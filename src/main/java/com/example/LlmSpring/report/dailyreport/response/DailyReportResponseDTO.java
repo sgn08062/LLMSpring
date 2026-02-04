@@ -1,7 +1,7 @@
-package com.example.LlmSpring.dailyreport.response;
+package com.example.LlmSpring.report.dailyreport.response;
 
-import com.example.LlmSpring.dailyreport.DailyReportChatLogVO;
-import com.example.LlmSpring.dailyreport.DailyReportVO;
+import com.example.LlmSpring.report.dailyreport.DailyReportChatLogVO;
+import com.example.LlmSpring.report.dailyreport.DailyReportVO;
 import lombok.Data;
 
 import java.util.List;

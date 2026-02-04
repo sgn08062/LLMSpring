@@ -1,4 +1,4 @@
-package com.example.LlmSpring.dailyreport;
+package com.example.LlmSpring.report.dailyreport;
 
 import lombok.Data;
 
