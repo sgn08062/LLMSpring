@@ -68,4 +68,25 @@ public interface ProjectMapper {
 
     // 17. 통계 조회
     ProjectDashboardResponseDTO selectProjectStats(Long projectId);
+
+
+    // == 스케줄링 관련 메서드 == //
+    // [Scheduler] 1. 마감일이 '내일'인 ACTIVE 프로젝트 조회
+    List<ProjectVO> getProjectsDueTomorrow();
+
+    // [Scheduler] 2. 마감일이 지났는데 아직 ACTIVE 상태인 프로젝트 조회
+    List<ProjectVO> getOverdueActiveProjects();
+
+    // [Scheduler] 3. 특정 프로젝트의 알림 대상 멤버 ID 조회 (ACTIVE 상태 & 탈퇴 안 한 사람)
+    List<String> getActiveMemberIds(@Param("projectId") int projectId);
+
+    // [Scheduler] 4. 프로젝트 상태 일괄 변경 (ACTIVE -> DONE)
+    // 여러 프로젝트를 한 번에 업데이트하기 위해 List<Integer>를 받습니다.
+    void updateProjectsStatusToDone(@Param("projectIds") List<Integer> projectIds);
+
+    // [Scheduler] 5. 영구 삭제 D-1 프로젝트 조회
+    List<ProjectVO> getProjectsDueForHardDeleteTomorrow();
+
+    List<ProjectVO> getProjectsDueForHardDeleteToday();
+
 }

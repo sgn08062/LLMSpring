@@ -30,9 +30,6 @@ public class IssueController {
             @PathVariable("projectId") int projectId,
             @RequestBody IssueCreateRequestDTO dto) {
 
-        System.out.println(">>> 컨트롤러 진입 성공! ProjectID: " + projectId);
-        System.out.println(">>> 요청 데이터: " + dto);
-
         // 1. 토큰에서 유저 ID 추출
         String token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
         String userId = jwtService.verifyTokenAndUserId(token);

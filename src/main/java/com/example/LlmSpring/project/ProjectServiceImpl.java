@@ -1,6 +1,8 @@
 package com.example.LlmSpring.project;
 
+import com.example.LlmSpring.alarm.AlarmMapper;
 import com.example.LlmSpring.alarm.AlarmService;
+import com.example.LlmSpring.alarm.AlarmVO;
 import com.example.LlmSpring.project.request.ProjectCreateRequestDTO;
 import com.example.LlmSpring.project.request.ProjectUpdateRequestDTO;
 import com.example.LlmSpring.project.response.ProjectDetailResponseDTO;
@@ -20,6 +22,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     private final ProjectMapper projectMapper;
     private final AlarmService alarmService;
+    private final AlarmMapper alarmMapper;
     private final ProjectMemberMapper projectMemberMapper;
 
     /**
@@ -124,7 +127,57 @@ public class ProjectServiceImpl implements ProjectService {
             throw new RuntimeException("프로젝트 소유자(OWNER)만 상태를 변경할 수 있습니다.");
         }
 
-        return projectMapper.updateProjectStatus(projectId, status);
+        // 2. 상태 업데이트 실행
+        int result = projectMapper.updateProjectStatus(projectId, status);
+
+        // 3. 'DONE' 상태로 변경된 경우, 멤버들에게 알림 발송
+        if ("DONE".equals(status) || "ACTIVE".equals(status)) {
+            sendProjectStatusAlarm(projectId, status);
+        }
+
+        return result;
+    }
+
+    // [추가] 프로젝트 완료 알림 발송 헬퍼 메서드
+    private void sendProjectStatusAlarm(int projectId, String status) {
+        // 1. 프로젝트 정보 조회
+        ProjectVO project = projectMapper.selectProjectById((long) projectId);
+        if (project == null) return;
+
+        // 2. 알림 받을 멤버 ID 조회
+        List<String> memberIds = projectMapper.getActiveMemberIds(projectId);
+        if (memberIds.isEmpty()) return;
+
+        // 3. 상태별 메시지 및 타입 설정
+        String type;
+        String content;
+
+        if ("DONE".equals(status)) {
+            type = "PROJECT_FINISHED";
+            content = "🎉 프로젝트 '" + project.getName() + "'가 완료 처리되었습니다. 모두 고생하셨습니다!";
+        } else if ("ACTIVE".equals(status)) {
+            type = "PROJECT_REACTIVATED";
+            content = "🔥 프로젝트 '" + project.getName() + "'가 다시 활성화되었습니다. 다시 달려봅시다!";
+        } else {
+            return; // 그 외 상태는 알림 없음
+        }
+
+        // 4. 알림 데이터 생성
+        List<AlarmVO> alarmList = new ArrayList<>();
+        for (String memberId : memberIds) {
+            alarmList.add(AlarmVO.builder()
+                    .userId(memberId)
+                    .projectId(projectId)
+                    .type(type)
+                    .content(content)
+                    .url("/projects/" + projectId) // 클릭 시 프로젝트 홈으로 이동
+                    .build());
+        }
+
+        // 5. 일괄 전송
+        if (!alarmList.isEmpty()) {
+            alarmMapper.insertAlarmsBatch(alarmList);
+        }
     }
 
     /**
@@ -144,7 +197,39 @@ public class ProjectServiceImpl implements ProjectService {
         // 현재 시간으로부터 7일 뒤의 시간을 계산하고 DB에 업데이트
         LocalDateTime deleteDate = LocalDateTime.now().plusDays(7);
 
-        return projectMapper.deleteProject(projectId, deleteDate);
+        int response = projectMapper.deleteProject(projectId, deleteDate);
+
+        // 멤버들에게 '삭제 예정' 알림 발송
+        sendProjectDeletedAlarm(projectId);
+
+        return response;
+    }
+
+    // 삭제 알림 발송 헬퍼 메서드
+    private void sendProjectDeletedAlarm(int projectId) {
+        ProjectVO project = projectMapper.selectProjectById((long) projectId);
+        if (project == null) return; // 이미 안 조회될 수도 있으나, 로직상 직전이라 괜찮음
+
+        List<String> memberIds = projectMapper.getActiveMemberIds(projectId);
+        if (memberIds.isEmpty()) return;
+
+        List<AlarmVO> alarmList = new ArrayList<>();
+        // 보관 기간을 30일로 가정했을 때의 안내 문구
+        String message = "⚠️ 프로젝트 '" + project.getName() + "'가 삭제 대기 상태로 변경되었습니다. 7일 후 영구 삭제됩니다.";
+
+        for (String memberId : memberIds) {
+            alarmList.add(AlarmVO.builder()
+                    .userId(memberId)
+                    .projectId(projectId)
+                    .type("PROJECT_DELETED") // 삭제 알림 타입
+                    .content(message)
+                    .url("/projects") // 프로젝트가 삭제됐으니 대시보드가 아닌 목록으로 이동
+                    .build());
+        }
+
+        if (!alarmList.isEmpty()) {
+            alarmMapper.insertAlarmsBatch(alarmList);
+        }
     }
 
 
@@ -238,7 +323,37 @@ public class ProjectServiceImpl implements ProjectService {
         }
 
         // 3. 복구 실행: deleted_at을 null로 업데이트
-        return projectMapper.restoreProject(projectId);
+        int response =  projectMapper.restoreProject(projectId);
+
+        sendProjectRestoredAlarm(projectId);
+
+        return response;
+    }
+
+    // 복구 알림 발송 헬퍼 메서드
+    private void sendProjectRestoredAlarm(int projectId) {
+        ProjectVO project = projectMapper.selectProjectById((long) projectId);
+        if (project == null) return;
+
+        List<String> memberIds = projectMapper.getActiveMemberIds(projectId);
+        if (memberIds.isEmpty()) return;
+
+        List<AlarmVO> alarmList = new ArrayList<>();
+        String message = "♻️ 프로젝트 '" + project.getName() + "'의 삭제 요청이 취소되어 정상적으로 복구되었습니다.";
+
+        for (String memberId : memberIds) {
+            alarmList.add(AlarmVO.builder()
+                    .userId(memberId)
+                    .projectId(projectId)
+                    .type("PROJECT_RESTORED") // 복구 알림 타입
+                    .content(message)
+                    .url("/projects/" + projectId) // 다시 대시보드로 이동 가능
+                    .build());
+        }
+
+        if (!alarmList.isEmpty()) {
+            alarmMapper.insertAlarmsBatch(alarmList);
+        }
     }
 
     /**

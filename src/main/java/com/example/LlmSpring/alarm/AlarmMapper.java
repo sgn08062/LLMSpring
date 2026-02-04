@@ -3,6 +3,7 @@ package com.example.LlmSpring.alarm;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;
+import org.apache.ibatis.annotations.Param;
 
 @Mapper
 public interface AlarmMapper {
@@ -29,4 +30,8 @@ public interface AlarmMapper {
 
     // 8. 모든 알림 삭제
     void deleteAllAlarms(String userId);
+
+    // 알림 대량 등록
+    void insertAlarmsBatch(@Param("alarms") List<AlarmVO> alarms);
+
 }

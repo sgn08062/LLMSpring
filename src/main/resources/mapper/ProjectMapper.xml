@@ -263,4 +263,53 @@
         FROM ProjectMember
         WHERE project_id = #{projectId} AND status = 'ACTIVE' AND deleted_at IS NULL) AS memberCount
     </select>
+
+
+    <select id="getProjectsDueTomorrow" resultType="com.example.LlmSpring.project.ProjectVO">
+        SELECT *
+        FROM Project
+        WHERE status = 'ACTIVE'
+          AND deleted_at IS NULL
+          AND DATE(end_date) = DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+    </select>
+
+    <select id="getOverdueActiveProjects" resultType="com.example.LlmSpring.project.ProjectVO">
+        SELECT *
+        FROM Project
+        WHERE status = 'ACTIVE'
+          AND deleted_at IS NULL
+          AND end_date &lt; NOW() </select>
+
+    <select id="getActiveMemberIds" resultType="string">
+        SELECT user_id
+        FROM ProjectMember
+        WHERE project_id = #{projectId}
+          AND status = 'ACTIVE'
+          AND deleted_at IS NULL
+    </select>
+
+    <update id="updateProjectsStatusToDone">
+        UPDATE Project
+        SET status = 'DONE',
+        updated_at = CURRENT_TIMESTAMP
+        WHERE project_id IN
+        <foreach collection="projectIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <select id="getProjectsDueForHardDeleteTomorrow" resultType="com.example.LlmSpring.project.ProjectVO">
+        SELECT *
+        FROM Project
+        WHERE deleted_at IS NOT NULL
+          AND DATEDIFF(CURDATE(), DATE(deleted_at)) = 6
+    </select>
+
+    <select id="getProjectsDueForHardDeleteToday" resultType="com.example.LlmSpring.project.ProjectVO">
+        SELECT *
+        FROM Project
+        WHERE deleted_at IS NOT NULL
+          AND DATEDIFF(CURDATE(), DATE(deleted_at)) = 7
+    </select>
+
 </mapper>
