@@ -4,8 +4,12 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import lombok.Getter;
+import lombok.Setter;
 
 @Data
+@Getter
+@Setter
 public class ProjectSidebarResponseDTO {
     private Long projectId;
     private String projectName;

@@ -40,12 +40,13 @@ public class SidebarService {
         response.setProjectId(projectId);
 
         //프로젝트 정보 조회
-        Map<String, Object> info = sidebarMapper.selectProjectInfo(projectId);
-        if (info != null) {
-            response.setProjectName((String) info.get("name"));
-            response.setProjectStatus((String) info.get("status"));
-            Object timeObj = info.get("dailyReportTime");
-            response.setDailyReportTime(timeObj != null ? timeObj.toString() : null);
+        ProjectSidebarResponseDTO projectInfo = sidebarMapper.selectProjectInfo(projectId);
+
+        if (projectInfo != null) {
+            response.setProjectName(projectInfo.getProjectName());
+            response.setProjectStatus(projectInfo.getProjectStatus());
+            response.setDailyReportTime(projectInfo.getDailyReportTime());
+            response.setGithubUrl(projectInfo.getGithubUrl());
         }
 
         //오늘 리포트 작성 여부

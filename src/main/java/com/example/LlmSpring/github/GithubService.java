@@ -6,6 +6,11 @@ import com.example.LlmSpring.projectMember.ProjectMemberMapper;
 import com.example.LlmSpring.user.UserMapper;
 import com.example.LlmSpring.user.UserVO;
 import com.example.LlmSpring.util.EncryptionUtil;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpEntity;
@@ -211,5 +216,81 @@ public class GithubService {
         }
 
         return resultList;
+    }
+
+    /**
+     * 특정 저장소의 오늘 커밋 개수를 조회합니다.
+     * @param repoUrl 깃허브 저장소 URL (예: https://github.com/owner/repo)
+     * @param token (선택) 깃허브 토큰이 있다면 Rate Limit 방지용으로 사용 가능
+     * @return 오늘 커밋 수
+     */
+    /**
+     * 특정 저장소의 '오늘(KST 00:00~)' 커밋 개수를 조회합니다.
+     * Search API 사용 + URL 인코딩 적용
+     */
+    public int getTodayCommitCount(String repoUrl, String token) {
+        if (repoUrl == null || repoUrl.isEmpty()) {
+            return 0;
+        }
+
+        try {
+            // 1. URL 파싱 (https://github.com/owner/repo -> owner/repo)
+            String path = repoUrl.replace("https://github.com/", "");
+            if (path.endsWith(".git")) {
+                path = path.substring(0, path.length() - 4);
+            }
+
+            // 2. 검색 날짜 설정 (오늘 00:00:00 KST)
+            // Search API는 ISO 8601 포맷을 정확히 지원합니다.
+            String dateQuery = LocalDate.now(ZoneId.of("Asia/Seoul"))
+                    .atStartOfDay(ZoneId.of("Asia/Seoul"))
+                    .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+
+            // 3. 쿼리 생성 (repo:owner/repo committer-date:>=날짜)
+            // 예: repo:sgn08062/LLMSpring committer-date:>=2026-02-05T00:00:00+09:00
+            String rawQuery = "repo:" + path + " committer-date:>=" + dateQuery;
+
+            // [핵심] URL 인코딩 (이게 없어서 422 에러가 났던 것입니다)
+            String encodedQuery = URLEncoder.encode(rawQuery, StandardCharsets.UTF_8);
+
+            // 4. API URL 생성
+            String apiUrl = "https://api.github.com/search/commits?q=" + encodedQuery;
+
+            // 5. 요청 설정
+            RestTemplate restTemplate = new RestTemplate();
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Accept", "application/vnd.github.v3+json"); // v3 API 명시
+
+            // 토큰 설정 (Bearer 중복 방지)
+            if (token != null && !token.isEmpty()) {
+                String finalToken = token.trim();
+                if (!finalToken.startsWith("Bearer ")) {
+                    headers.set("Authorization", "Bearer " + finalToken);
+                } else {
+                    headers.set("Authorization", finalToken);
+                }
+            }
+            HttpEntity<String> entity = new HttpEntity<>(headers);
+
+            // 6. API 호출
+            ResponseEntity<Map> response = restTemplate.exchange(
+                    apiUrl,
+                    HttpMethod.GET,
+                    entity,
+                    Map.class
+            );
+
+            // 7. 결과 추출 (total_count)
+            if (response.getBody() != null && response.getBody().containsKey("total_count")) {
+                return (int) response.getBody().get("total_count");
+            }
+
+        } catch (Exception e) {
+            log.error("GitHub 커밋 검색 실패 (Search API): {}", e.getMessage());
+            // 에러 발생 시 0 반환
+            return 0;
+        }
+
+        return 0;
     }
 }

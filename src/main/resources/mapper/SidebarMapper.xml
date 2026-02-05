@@ -20,7 +20,7 @@
         ORDER BY pm.is_favorite DESC, p.name ASC
     </select>
 
-    <select id="selectProjectInfo" resultType="map">
+    <select id="selectProjectInfo" resultType="com.example.LlmSpring.sidebar.response.ProjectSidebarResponseDTO">
         SELECT
             name,
             status,
