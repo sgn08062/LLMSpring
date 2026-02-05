@@ -20,47 +20,69 @@ public class AiChatService {
     @Value("${gemini.api.key}")
     private String geminiApiKey;
 
-    public Map<String, Object> generateChatResponse(String reportType, String message, String context, boolean isSelection){
-        // 1. 리포트 타입에 따른 시스템 프롬프트 설정
-        String systemPersona = getSystemPersona(reportType);
+    public Map<String, Object> generateChatResponse(String reportType, String userMessage, String context, boolean isSelection) {
 
-        // 2. 최종 프롬프트 구성
-        StringBuilder prompt = new StringBuilder();
-        prompt.append(systemPersona).append("\n\n");
+        // 1. 페르소나 및 시스템 지침 설정
+        String systemInstruction = getSystemPersona(reportType);
 
-        if(isSelection && context != null && !context.isEmpty()){
-            prompt.append("사용자가 다음 텍스트 블록을 선택했습니다:\n");
-            prompt.append("\"\"\"\n").append(context).append("\n\"\"\"\n");
-            prompt.append("선택된 부분에 대해 다음 요청을 처리하세요: ").append(message);
+        // 2. 최종 프롬프트 조립
+        StringBuilder finalPrompt = new StringBuilder();
+        finalPrompt.append(systemInstruction).append("\n\n");
+
+        if (isSelection && context != null && !context.isEmpty()) {
+            finalPrompt.append("--- [Target Text Start] ---\n")
+                    .append(context).append("\n")
+                    .append("--- [Target Text End] ---\n\n");
+            finalPrompt.append("Request: ").append(userMessage).append("\n");
+
+            finalPrompt.append("Constraint: Rewrite the target text based on the request. ")
+                    .append("Output ONLY the rewritten text in raw Markdown format. ")
+                    .append("Strictly maintain the Markdown syntax (headers, lists, bold, etc.). ")
+                    .append("Do NOT wrap the output in code blocks (```). ") // 백틱 감싸기 금지 (Ctrl+C/V 최적화)
+                    .append("Do NOT include any intro, outro, explanations, or labels.");
         } else {
-            prompt.append("다음은 문서의 전체 내용입니다:\n");
-            prompt.append("\"\"\"\n").append(context).append("\n\"\"\"\n");
-            prompt.append("위 내용에 대해 다음 요청을 처리하세요: ").append(message);
+            finalPrompt.append("--- [Context Start] ---\n")
+                    .append(context != null ? context : "(No content)").append("\n")
+                    .append("--- [Context End] ---\n\n");
+            finalPrompt.append("Request: ").append(userMessage).append("\n");
+            finalPrompt.append("Constraint: Answer the request based on the context. If the request is generation or rewriting, output ONLY the result text without explanations.");
         }
 
-        // 3. Gemini API 호출
-        String aiResponse = callGeminiAPI(prompt.toString());
+        // 3. 내부 메서드로 Gemini API 호출
+        String aiReply = callGemini(finalPrompt.toString());
 
         // 4. 결과 반환
-        Map<String, Object> result = new HashMap<>();
-        result.put("reply", aiResponse);
-        return result;
+        Map<String, Object> response = new HashMap<>();
+        response.put("reply", aiReply.trim());
+        return response;
     }
+
 
     private String getSystemPersona(String reportType) {
         if ("FINAL".equalsIgnoreCase(reportType)) {
-            return "당신은 소프트웨어 프로젝트의 '최종 결과 보고서' 작성을 돕는 전문 테크니컬 라이터입니다. " +
-                    "문체는 격식 있고 비즈니스 친화적이어야 하며, 프로젝트의 성과와 기술적 깊이를 강조하는 방향으로 조언하십시오.";
+            // 최종 리포트: 전문적, 격식 있음, 설명 금지
+            return "You are a professional technical writer. " +
+                    "Your task is to rewrite or refine the user's text to be formal and professional. " +
+                    "IMPORTANT: You must output ONLY the rewritten text. " +
+                    "Do NOT add greetings, 'Here is the revised version', markdown headers, or explanations. " +
+                    "Just provide the final result directly.";
+        } else if ("DAILY".equalsIgnoreCase(reportType)) {
+            // 일일 리포트: 간결함, 명확함, 설명 금지
+            return "You are an AI assistant for daily scrum reports. " +
+                    "Refine the text to be clear and concise. " +
+                    "IMPORTANT: Output ONLY the refined text. No conversational fillers or explanations.";
         } else {
-            // DAILY 또는 기본값
-            return "당신은 개발자의 '일일 업무 리포트(Daily Report)' 작성을 돕는 AI 어시스턴트입니다. " +
-                    "문체는 간결하고 명확해야 하며, 코드 변경 사항이나 기술적 이슈를 요약하는 데 중점을 두십시오.";
+            return "You are a helpful AI assistant. Answer concisely and output ONLY the result.";
         }
     }
 
-    private String callGeminiAPI(String prompt) {
+    /**
+     * Gemini API 호출 (RestTemplate 직접 사용)
+     */
+    private String callGemini(String prompt) {
         String geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-latest:generateContent?key=" + geminiApiKey;
 
+        // Request Payload 구성
         Map<String, Object> requestBody = new HashMap<>();
         Map<String, Object> content = new HashMap<>();
         Map<String, Object> parts = new HashMap<>();
@@ -68,10 +90,11 @@ public class AiChatService {
         content.put("parts", Collections.singletonList(parts));
 
         Map<String, Object> generationConfig = new HashMap<>();
-        generationConfig.put("temperature", 0.3); // 창의성 조절
+        generationConfig.put("temperature", 0.3); // 창의성 낮춤 (정확한 수정 유도)
         requestBody.put("contents", Collections.singletonList(content));
         requestBody.put("generationConfig", generationConfig);
 
+        // HTTP 요청 전송
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
