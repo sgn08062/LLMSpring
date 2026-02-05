@@ -82,7 +82,7 @@ public class AiChatService {
      * Gemini API 호출 (RestTemplate 직접 사용)
      */
     private String callGemini(String prompt) {
-        String geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-latest:generateContent?key=" + geminiApiKey;
+        String geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=" + geminiApiKey;
 
         // Request Payload 구성
         Map<String, Object> requestBody = new HashMap<>();
