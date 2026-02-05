@@ -1,5 +1,6 @@
 package com.example.LlmSpring.controller;
 
+import com.example.LlmSpring.report.AiChatService;
 import com.example.LlmSpring.report.dailyreport.DailyReportService;
 import com.example.LlmSpring.report.dailyreport.response.DailyReportResponseDTO;
 import com.example.LlmSpring.report.finalreport.FinalReportService;
@@ -24,6 +25,7 @@ public class ReportController {
     private final DailyReportService dailyReportService;
     private final FinalReportService finalReportService;
     private final JWTService jwtService;
+    private final AiChatService aiChatService;
 
     private String getUserId(String authHeader) {
         String token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
@@ -226,5 +228,30 @@ public class ReportController {
         finalReportService.deleteFinalReport(finalReportId, userId);
 
         return ResponseEntity.ok("리포트가 삭제되었습니다.");
+    }
+
+    // 리포트 AI 채팅
+    @PostMapping("/reports/chat")
+    public ResponseEntity<Map<String, Object>> sendUnifiedChat(
+            @PathVariable Long projectId,
+            @RequestBody Map<String, Object> body
+    ){
+        String message = (String) body.get("message");
+        String context =  (String) body.get("context");
+        Boolean isSelection = (Boolean) body.get("isSelection");
+        String reportType = (String) body.get("reportType");
+
+        System.out.println("message: " + message + "\ncontext: " + context + "\nisSelection: " + isSelection + "\nreportType: " + reportType);
+
+        Map<String, Object> response = aiChatService.generateChatResponse(
+                reportType,
+                message,
+                context,
+                isSelection != null ? isSelection : false
+        );
+
+        System.out.println(response.toString());
+
+        return ResponseEntity.ok(response);
     }
 }
