@@ -241,8 +241,6 @@ public class ReportController {
         Boolean isSelection = (Boolean) body.get("isSelection");
         String reportType = (String) body.get("reportType");
 
-        System.out.println("message: " + message + "\ncontext: " + context + "\nisSelection: " + isSelection + "\nreportType: " + reportType);
-
         Map<String, Object> response = aiChatService.generateChatResponse(
                 reportType,
                 message,

@@ -37,11 +37,12 @@ public class AiChatService {
                     .append("--- [Target Text End] ---\n\n");
             finalPrompt.append("Request: ").append(userMessage).append("\n");
 
-            finalPrompt.append("Constraint: Rewrite the target text based on the request. ")
-                    .append("Output ONLY the rewritten text in raw Markdown format. ")
-                    .append("Strictly maintain the Markdown syntax (headers, lists, bold, etc.). ")
-                    .append("Do NOT wrap the output in code blocks (```). ") // 백틱 감싸기 금지 (Ctrl+C/V 최적화)
-                    .append("Do NOT include any intro, outro, explanations, or labels.");
+            finalPrompt.append("Constraint: Rewrite the content of the target text based on the request, but MUST PRESERVE the original structure and formatting exactly. ")
+                    .append("1. If the text starts with a header, label, or bold text (e.g., '**Action:**', '# Title'), keep it EXACTLY as it is at the start. ")
+                    .append("2. Only rewrite the body text following the headers. ")
+                    .append("3. Output ONLY the result in raw Markdown format. ")
+                    .append("4. Do NOT wrap the output in code blocks (```). ")
+                    .append("5. Do NOT add any intro/outro explanations.");
         } else {
             finalPrompt.append("--- [Context Start] ---\n")
                     .append(context != null ? context : "(No content)").append("\n")
