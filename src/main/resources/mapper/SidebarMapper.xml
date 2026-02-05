@@ -21,7 +21,11 @@
     </select>
 
     <select id="selectProjectInfo" resultType="map">
-        SELECT name, status, daily_report_time AS dailyReportTime
+        SELECT
+            name,
+            status,
+            daily_report_time AS dailyReportTime,
+            github_repo_url AS githubUrl
         FROM Project
         WHERE project_id = #{projectId}
     </select>
