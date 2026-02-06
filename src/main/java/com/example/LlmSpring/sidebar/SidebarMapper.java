@@ -14,7 +14,7 @@ public interface SidebarMapper {
     List<SidebarResponseDTO.SidebarProjectDTO> selectMySidebarProject(@Param("userId") String userId);
 
     //2. 프로젝트 사이드바: 기본 정보 (이름, 상태, 리포트 마감시간)
-    Map<String, Object> selectProjectInfo(@Param("projectId") Long projectId);
+    ProjectSidebarResponseDTO selectProjectInfo(@Param("projectId") Long projectId);
 
     //3. 프로젝트 사이드바: 오늘 리포트 작성 여부 (1 = 작성, 0 = 미작성)
     int countTodayMyReport(@Param("projectId") Long projectId, @Param("userId") String userId, @Param("date") String date);

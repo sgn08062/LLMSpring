@@ -3,12 +3,17 @@ package com.example.LlmSpring.project;
 import com.example.LlmSpring.alarm.AlarmMapper;
 import com.example.LlmSpring.alarm.AlarmService;
 import com.example.LlmSpring.alarm.AlarmVO;
+import com.example.LlmSpring.github.GithubService;
 import com.example.LlmSpring.project.request.ProjectCreateRequestDTO;
 import com.example.LlmSpring.project.request.ProjectUpdateRequestDTO;
+import com.example.LlmSpring.project.response.ProjectDashboardResponseDTO;
 import com.example.LlmSpring.project.response.ProjectDetailResponseDTO;
 import com.example.LlmSpring.project.response.ProjectListResponseDTO;
 import com.example.LlmSpring.projectMember.ProjectMemberMapper;
 import com.example.LlmSpring.projectMember.ProjectMemberVO;
+import com.example.LlmSpring.user.UserMapper;
+import com.example.LlmSpring.user.UserVO;
+import com.example.LlmSpring.util.EncryptionUtil;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +29,9 @@ public class ProjectServiceImpl implements ProjectService {
     private final AlarmService alarmService;
     private final AlarmMapper alarmMapper;
     private final ProjectMemberMapper projectMemberMapper;
+    private final GithubService githubService;
+    private final UserMapper userMapper;
+    private final EncryptionUtil encryptionUtil;
 
     /**
      * 프로젝트 생성 및 멤버 초기화
@@ -362,15 +370,22 @@ public class ProjectServiceImpl implements ProjectService {
      * (전체 업무 수, 완료된 업무 수, 해결되지 않은 이슈 수, 참여 멤버 수)
      */
     @Override
-    public com.example.LlmSpring.project.response.ProjectDashboardResponseDTO getProjectDashboardStats(Long projectId) {
-        // 1. 프로젝트 존재 여부 확인 (선택 사항이지만 안전을 위해 추천)
+    public ProjectDashboardResponseDTO getProjectDashboardStats(Long projectId, String userId) {
+        // 1. 프로젝트 존재 여부 및 정보 조회
         ProjectVO project = projectMapper.selectProjectById(projectId);
         if (project == null) {
             throw new RuntimeException("존재하지 않는 프로젝트입니다.");
         }
 
-        // 2. Mapper를 통해 통계 데이터 조회 및 반환
-        return projectMapper.selectProjectStats(projectId);
+        // 2. Mapper를 통해 기존 통계 데이터(업무, 이슈 등) 조회
+        ProjectDashboardResponseDTO response = projectMapper.selectProjectStats(projectId);
+
+        // (안전을 위해 null 체크)
+        if (response == null) {
+            response = new ProjectDashboardResponseDTO();
+        }
+
+        return response;
     }
 
 }

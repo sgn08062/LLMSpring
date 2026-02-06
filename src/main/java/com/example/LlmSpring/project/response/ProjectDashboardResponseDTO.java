@@ -9,4 +9,5 @@ public class ProjectDashboardResponseDTO {
     private int inProgressTaskCount; // 진행중인 업무 수
     private int openIssueCount;      // 해결 안 된 이슈 수
     private int memberCount;         // 참여 멤버 수
+    private int todayCommitCount; // 오늘 커밋 수
 }

@@ -4,13 +4,18 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import lombok.Getter;
+import lombok.Setter;
 
 @Data
+@Getter
+@Setter
 public class ProjectSidebarResponseDTO {
     private Long projectId;
     private String projectName;
     private String projectStatus;
     private String dailyReportTime;
+    private String githubUrl;
     private boolean isReportWritten; // 오늘 리포트 썼는지 (true/false)
     private List<SidebarTaskDTO> myTasks;
     private List<SidebarIssueDTO> myIssues;
