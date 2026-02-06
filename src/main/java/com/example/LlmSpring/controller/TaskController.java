@@ -1,6 +1,6 @@
 package com.example.LlmSpring.controller;
 
-import com.example.LlmSpring.task.TaskCheckListVO;
+import com.example.LlmSpring.task.TaskLogVO;
 import com.example.LlmSpring.task.request.TaskRequestDTO;
 import com.example.LlmSpring.task.response.TaskResponseDTO;
 import com.example.LlmSpring.task.TaskService;
@@ -30,7 +30,30 @@ public class TaskController {
         return jwtService.verifyTokenAndUserId(token);
     }
 
-    // 1. 업무 생성
+    // [수정] 내 권한 확인 API (디버깅 로그 추가)
+    @GetMapping("/my-role")
+    public ResponseEntity<Map<String, String>> getMyRole(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long projectId) {
+
+        String userId = getUserId(authHeader);
+        if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        // 서버 로그 출력 (이게 서버 콘솔에 어떻게 찍히는지 확인하세요!)
+        System.out.println("=== 권한 조회 요청 ===");
+        System.out.println("User ID: " + userId);
+        System.out.println("Project ID: " + projectId);
+
+        String role = taskService.getMyRole(projectId, userId);
+
+        System.out.println("DB 조회 결과 Role: " + role);
+        System.out.println("=====================");
+
+        return ResponseEntity.ok(Map.of("role", role));
+    }
+
+    // --- (아래부터는 기존 코드 유지) ---
+
     @PostMapping
     public ResponseEntity<Map<String, String>> createTask(
             @RequestHeader("Authorization") String authHeader,
@@ -43,24 +66,16 @@ public class TaskController {
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", "Created"));
     }
 
-    // 2. 업무 목록 조회
     @GetMapping
     public ResponseEntity<List<TaskResponseDTO>> getTaskList(@PathVariable Long projectId) {
         return ResponseEntity.ok(taskService.getTaskList(projectId));
     }
 
-    // 3. 상세 조회
     @GetMapping("/{taskId}")
     public ResponseEntity<TaskResponseDTO> getTaskDetail(@PathVariable Long taskId) {
         return ResponseEntity.ok(taskService.getTaskDetail(taskId));
     }
 
-    // 4. 업무 상태 변경 (드래그 앤 드롭 전용)
-    @CrossOrigin(
-            origins = "*",
-            methods = {RequestMethod.PATCH, RequestMethod.OPTIONS},
-            allowedHeaders = "*"
-    )
     @PatchMapping("/{taskId}/status")
     public ResponseEntity<Map<String, String>> updateStatus(
             @RequestHeader("Authorization") String authHeader,
@@ -73,7 +88,6 @@ public class TaskController {
         return ResponseEntity.ok(Map.of("message", "Status Updated"));
     }
 
-    // 5. 업무 수정
     @PutMapping("/{taskId}")
     public ResponseEntity<Map<String, String>> updateTask(
             @RequestHeader("Authorization") String authHeader,
@@ -86,23 +100,19 @@ public class TaskController {
         return ResponseEntity.ok(Map.of("message", "Updated"));
     }
 
-    // 6. 삭제
     @DeleteMapping("/{taskId}")
     public ResponseEntity<Map<String, String>> deleteTask(
-            @RequestHeader("Authorization") String authHeader, // 1. 헤더 추가
+            @RequestHeader("Authorization") String authHeader,
             @PathVariable Long taskId) {
-
-        String userId = getUserId(authHeader); // 2. 사용자 ID 추출
+        String userId = getUserId(authHeader);
         if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
-        taskService.deleteTask(taskId, userId); // 3. 서비스에 ID 전달
+        taskService.deleteTask(taskId, userId);
         return ResponseEntity.ok(Map.of("message", "Deleted"));
     }
 
-    // --- 체크리스트 ---
-
     @GetMapping("/{taskId}/checklists")
-    public List<TaskCheckListVO> getCheckLists(@PathVariable Long taskId) {
+    public List<com.example.LlmSpring.task.TaskCheckListVO> getCheckLists(@PathVariable Long taskId) {
         return taskService.getCheckLists(taskId);
     }
 
@@ -137,8 +147,6 @@ public class TaskController {
         return ResponseEntity.ok(Map.of("message", "Toggled"));
     }
 
-    // --- 채팅 & 로그 ---
-
     @GetMapping("/{taskId}/chats")
     public List<Map<String, Object>> getChats(@PathVariable Long taskId) {
         return taskService.getChats(taskId);
@@ -149,12 +157,10 @@ public class TaskController {
             @RequestHeader("Authorization") String authHeader,
             @PathVariable Long taskId,
             @RequestBody Map<String, String> body) {
-
         String userId = getUserId(authHeader);
         if (userId == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         String content = body.get("content");
-
         taskService.addChat(taskId, userId, content);
 
         Map<String, Object> chatMessage = new HashMap<>();
@@ -163,12 +169,11 @@ public class TaskController {
         chatMessage.put("taskId", taskId);
 
         messagingTemplate.convertAndSend("/sub/tasks/" + taskId, chatMessage);
-
         return ResponseEntity.ok("Chat added");
     }
 
     @GetMapping("/{taskId}/logs")
-    public List<Map<String, Object>> getLogs(@PathVariable Long taskId) {
-        return taskService.getLogs(taskId);
+    public ResponseEntity<List<TaskLogVO>> getLogs(@PathVariable Long taskId) {
+        return ResponseEntity.ok(taskService.getLogs(taskId));
     }
 }

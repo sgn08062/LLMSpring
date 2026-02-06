@@ -37,6 +37,6 @@ public interface ProjectService {
     ProjectDetailResponseDTO getProjectDetail(int projectId, String userId);
 
     // 대시보드 통계 조회
-    ProjectDashboardResponseDTO getProjectDashboardStats(Long projectId);
+    ProjectDashboardResponseDTO getProjectDashboardStats(Long projectId, String userId);
 
 }

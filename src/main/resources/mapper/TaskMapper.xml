@@ -4,6 +4,19 @@
 
 <mapper namespace="com.example.LlmSpring.task.TaskMapper">
 
+    <select id="getProjectRole" resultType="String">
+        SELECT role
+        FROM ProjectMember
+        WHERE project_id = #{projectId}
+          AND user_id = #{userId}
+          AND deleted_at IS NULL
+    </select>
+
+    <select id="selectCheckListById" resultType="com.example.LlmSpring.task.TaskCheckListVO">
+        SELECT checklist_id AS checkListId, content, status, created_at AS createAt, task_id AS taskId
+        FROM TaskCheckList WHERE checklist_id = #{checkListId}
+    </select>
+
     <insert id="insertTask" useGeneratedKeys="true" keyProperty="taskId">
         INSERT INTO Task (project_id, user_id, title, content, status, priority, due_date, branch)
         VALUES (#{projectId}, #{userId}, #{title}, #{content}, #{status}, #{priority}, #{dueDate}, #{branch})
@@ -73,8 +86,18 @@
         VALUES (#{taskId}, #{type}, #{content}, #{userId})
     </insert>
 
-    <select id="selectLogs" resultType="map">
-        SELECT * FROM TaskLog WHERE task_id = #{taskId} ORDER BY created_at DESC
+    <select id="selectLogs" resultType="com.example.LlmSpring.task.TaskLogVO">
+        SELECT
+            log_id AS logId,
+            type,
+            content,
+            meta_data AS metaData,
+            created_at AS createAt,
+            task_id AS taskId,
+            user_id AS userId
+        FROM TaskLog
+        WHERE task_id = #{taskId}
+        ORDER BY created_at DESC
     </select>
 
 </mapper>

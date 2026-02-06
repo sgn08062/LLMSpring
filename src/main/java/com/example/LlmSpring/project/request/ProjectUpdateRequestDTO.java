@@ -1,5 +1,6 @@
 package com.example.LlmSpring.project.request;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -10,5 +11,6 @@ public class ProjectUpdateRequestDTO {
     private String description;
     private String gitUrl;
     private LocalDateTime endDate;   // 마감일만 유지
+    @JsonFormat(pattern = "HH:mm")
     private LocalTime reportTime;
 }

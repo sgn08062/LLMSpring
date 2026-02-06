@@ -177,7 +177,7 @@ public class AlarmServiceImpl implements AlarmService {
 
         // 3. 알림 내용 및 URL 설정
         String content = "";
-        String url = String.format("/projectDetail?projectId=%d&taskId=%d", projectId, taskId);
+        String url = String.format("/projects/%d?taskId=%d", projectId, taskId);
 
         switch (type) {
             case "CREATE":

@@ -13,16 +13,24 @@
                  )
     </insert>
 
-    <select id="selectMyAlarms" resultType="AlarmVO">
+    <select id="selectMyAlarms" resultType="com.example.LlmSpring.alarm.AlarmVO">
         SELECT
-            a.*,
+            a.alarm_id AS alarmId,
+            a.user_id AS userId,
+            a.sender_id AS senderId,
+            a.project_id AS projectId,
+            a.type,
+            a.reference_id AS referenceId,
+            a.content,
+            a.url,
+            a.is_read AS isRead,
+            a.created_at AS createdAt,  a.deleted_at AS deletedAt,
+
             sender.name AS senderName,
             sender.file_path AS senderFilePath,
             p.name AS projectName
         FROM Alarm a
-                 -- 보낸 사람 정보 (시스템 알림일 수 있으니 LEFT JOIN)
                  LEFT JOIN User sender ON a.sender_id = sender.user_id
-            -- 프로젝트 정보 (프로젝트 관련 없을 수 있으니 LEFT JOIN)
                  LEFT JOIN Project p ON a.project_id = p.project_id
         WHERE a.user_id = #{userId}
           AND a.deleted_at IS NULL

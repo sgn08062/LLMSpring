@@ -20,8 +20,16 @@
         ORDER BY pm.is_favorite DESC, p.name ASC
     </select>
 
-    <select id="selectProjectInfo" resultType="map">
-        SELECT name, status, daily_report_time AS dailyReportTime
+    <select id="selectProjectInfo" resultType="com.example.LlmSpring.sidebar.response.ProjectSidebarResponseDTO">
+        SELECT
+            project_id as projectId,
+            name as projectName,
+            CASE
+                WHEN deleted_at IS NOT NULL THEN 'DELETE'
+                ELSE status
+                END as projectStatus,
+            daily_report_time AS dailyReportTime,
+            github_repo_url AS githubUrl
         FROM Project
         WHERE project_id = #{projectId}
     </select>

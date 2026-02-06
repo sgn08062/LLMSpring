@@ -274,10 +274,15 @@ public class ProjectController {
      */
     @GetMapping("/{projectId}/dashboard")
     public ResponseEntity<ProjectDashboardResponseDTO> getProjectDashboard(
+            @RequestHeader("Authorization") String authHeader,
             @PathVariable("projectId") Long projectId) {
 
+        // 1. 토큰 검증 및 userId 추출
+        String token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
+        String userId = jwtService.verifyTokenAndUserId(token);
+
         // 서비스에서 통계 데이터를 가져옴
-        ProjectDashboardResponseDTO stats = projectService.getProjectDashboardStats(projectId);
+        ProjectDashboardResponseDTO stats = projectService.getProjectDashboardStats(projectId, userId);
         return ResponseEntity.ok(stats);
     }
 
