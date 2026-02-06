@@ -1,5 +1,6 @@
 package com.example.LlmSpring.report.dailyreport;
 
+import com.example.LlmSpring.task.TaskVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -8,6 +9,9 @@ import java.util.Map;
 
 @Mapper
 public interface DailyReportMapper {
+
+    // 오늘 완료/수정된 업무 조회
+    List<TaskVO> selectTodayTasks(@Param("projectId") int projectId, @Param("userId") String userId);
 
     //1. 리포트 진입 (중복 확인)
     DailyReportVO selectReportByDate(@Param("projectId") Long projectId, @Param("userId") String userId, @Param("date") String date);
