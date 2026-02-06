@@ -6,6 +6,7 @@ import java.util.List;
 
 public interface AlarmService {
     void createAlarm(AlarmVO alarmVO);
+    void createAlarm(String userId, String content, String type, String url);
     void sendInviteAlarm(String senderId, String receiverId, int projectId);
     void sendTaskAlarm(String senderId, List<String> receiverIds, int projectId, Long taskId, String taskTitle, String type);
 

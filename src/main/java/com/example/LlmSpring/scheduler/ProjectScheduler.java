@@ -1,9 +1,11 @@
 package com.example.LlmSpring.scheduler;
 
 import com.example.LlmSpring.alarm.AlarmMapper;
+import com.example.LlmSpring.alarm.AlarmService;
 import com.example.LlmSpring.alarm.AlarmVO;
 import com.example.LlmSpring.project.ProjectMapper;
 import com.example.LlmSpring.project.ProjectVO;
+import com.example.LlmSpring.projectMember.ProjectMemberMapper;
 import com.example.LlmSpring.report.dailyreport.DailyReportService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,14 +37,10 @@ public class ProjectScheduler {
     @Scheduled(cron = "0 0 0 * * *")
     @Transactional
     public void runDailyProjectCheck() {
-        log.info(">>> [Scheduler] Daily Project Check Started...");
-
         checkDueTomorrowProjects(); // 마감 임박 D-1
         checkOverdueProjects(); // 자동 완료 D-Day+1
         checkHardDeleteDueTomorrow(); // 영구 삭제 예고 D-1
         notifyPermanentDelete();         // 영구 삭제 알림 (D-Day+1)
-
-        log.info(">>> [Scheduler] Daily Project Check Finished.");
     }
 
     @Scheduled(cron = "0 * * * * *")
@@ -51,14 +49,8 @@ public class ProjectScheduler {
         LocalTime now = LocalTime.now(ZoneId.of("Asia/Seoul")).truncatedTo(ChronoUnit.MINUTES);
         // 시간을 문자열 "HH:mm" (예: "12:00")으로 변환
         String timeStr = now.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
-
-        log.info(">>> [Scheduler] Checking Daily Report for time: {}", timeStr);
-
         // 2. 해당 시간에 리포트를 생성해야 하는 프로젝트 조회
         List<ProjectVO> targetProjects = projectMapper.selectProjectsByReportTime(timeStr);
-
-        log.info(">>> [Scheduler] Found {} projects to report.", targetProjects.size());
-
         if(targetProjects.isEmpty()){
             return;
         }
@@ -191,6 +183,9 @@ public class ProjectScheduler {
             for(String memberId: memberIds){
                 dailyReportService.createSystemReportAsync(project.getProjectId().longValue(), memberId);
             }
+
+            log.info("Triggered async daily reports for project: {}", project.getName());
+
         }catch (Exception e){
             log.error("Error triggering report for project: " + project.getProjectId(), e);
         }
