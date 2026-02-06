@@ -3,9 +3,11 @@ package com.example.LlmSpring.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -32,13 +34,15 @@ public class SecurityConfig {
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // 2. 구체적인 권한 설정 (순서 중요!)
-                        .requestMatchers("/api/auth/login", "/api/auth/signup", "/api/auth/reissue").permitAll() // 로그인, 회원가입은 누구나
-                        .requestMatchers("/api/auth/validate").authenticated() // [핵심] 이 경로는 토큰이 있어야만 통과
-                        .requestMatchers("/api/**").permitAll() // (개발 중 편의를 위해 나머지 api는 열어둘 경우)
+                        // 대소문자 주의: 컨트롤러와 일치시킬 것 (지난번 수정 사항)
+                        .requestMatchers("/api/auth/logIn", "/api/auth/signUp", "/api/auth/reissue").permitAll()
+                        .requestMatchers("/api/**").authenticated()
                         .anyRequest().authenticated()
                 )
-                // 3. 필터 체인에 등록 (UsernamePasswordAuthenticationFilter 앞에 실행)
+                // [4. 핵심 수정] 인증 실패 시 로그인 페이지 리다이렉트 대신 401 에러 반환 설정
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+                )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .oauth2Login(oauth2 -> oauth2
                         .successHandler(oAuth2SuccessHandler)
