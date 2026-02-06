@@ -1,11 +1,13 @@
 package com.example.LlmSpring.controller;
 
+import com.example.LlmSpring.project.ProjectAccessService;
 import com.example.LlmSpring.report.AiChatService;
 import com.example.LlmSpring.report.dailyreport.DailyReportService;
 import com.example.LlmSpring.report.dailyreport.response.DailyReportResponseDTO;
 import com.example.LlmSpring.report.finalreport.FinalReportService;
 import com.example.LlmSpring.report.finalreport.FinalReportVO;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -16,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/projects/{projectId}")
@@ -25,12 +28,17 @@ public class ReportController {
     private final DailyReportService dailyReportService;
     private final FinalReportService finalReportService;
     private final AiChatService aiChatService;
+    private final ProjectAccessService projectAccessService;
 
     // 1. 리포트 작성 페이지 진입
     @PostMapping("/today")
     public ResponseEntity<DailyReportResponseDTO> createOrGetTodayReport(
             @AuthenticationPrincipal String userId,
             @PathVariable Long projectId) {
+
+        // [리포트 권한] DELETE만 차단 (DONE은 허용)
+        projectAccessService.validateReportAccess(projectId, userId);
+
         return ResponseEntity.ok(dailyReportService.getOrCreateTodayReport(projectId, userId));
     }
 
@@ -41,6 +49,9 @@ public class ReportController {
             @PathVariable Long projectId,
             @RequestBody Map<String, String> requestBody) {
 
+        // [리포트 권한]
+        projectAccessService.validateReportAccess(projectId, userId);
+
         String date = requestBody.get("date");
         Map<String, Object> response = dailyReportService.analyzeGitCommits(projectId, userId, date);
 
@@ -49,13 +60,24 @@ public class ReportController {
 
     // 2. 리포트 상세 조회
     @GetMapping("/{reportId}")
-    public ResponseEntity<DailyReportResponseDTO> getReport(@PathVariable Long projectId, @PathVariable Long reportId) {
+    public ResponseEntity<DailyReportResponseDTO> getReport(@AuthenticationPrincipal String userId, @PathVariable Long projectId, @PathVariable Long reportId) {
+
+        // [리포트 권한]
+        projectAccessService.validateReportAccess(projectId, userId);
+
         return ResponseEntity.ok(dailyReportService.getReportDetail(reportId));
     }
 
     // 3. 리포트 수정 (임시 저장)
     @PutMapping("/{reportId}")
-    public ResponseEntity<String> updateReport(@PathVariable Long reportId, @RequestBody Map<String, String> body) {
+    public ResponseEntity<String> updateReport(
+            @AuthenticationPrincipal String userId,
+            @PathVariable Long projectId,
+            @PathVariable Long reportId,
+            @RequestBody Map<String, String> body) {
+
+        // [리포트 권한]
+        projectAccessService.validateReportAccess(projectId, userId);
 
         String content = body.get("content");
         String title = body.get("title");
@@ -73,6 +95,8 @@ public class ReportController {
             @PathVariable Long projectId,
             @RequestBody Map<String, Object> body) {
 
+        // [리포트 권한]
+        projectAccessService.validateReportAccess(projectId, userId);
 
         Object dateObj = body.get("reportDate") != null ? body.get("reportDate") : body.get("date");
         if (dateObj == null) {
@@ -93,60 +117,123 @@ public class ReportController {
 
     // 4. 리포트 발행 (완료 처리)
     @PatchMapping("/{reportId}/publish")
-    public ResponseEntity<String> publishReport(@PathVariable Long reportId) {
+    public ResponseEntity<String> publishReport(
+            @AuthenticationPrincipal String userId,
+            @PathVariable Long projectId,
+            @PathVariable Long reportId) {
+
+        // [리포트 권한]
+        projectAccessService.validateReportAccess(projectId, userId);
+
         dailyReportService.publishReport(reportId);
         return ResponseEntity.ok("Published successfully");
     }
 
     // 5. 일일 리포트 요약 목록 조회
     @GetMapping("/daily-reports")
-    public List<DailyReportResponseDTO> getDailyReports(@PathVariable Long projectId, @RequestParam("date") String date) {
+    public List<DailyReportResponseDTO> getDailyReports(
+            @AuthenticationPrincipal String userId,
+            @PathVariable Long projectId,
+            @RequestParam("date") String date) {
+
+        // [리포트 권한]
+        projectAccessService.validateReportAccess(projectId, userId);
+
         return dailyReportService.getDailyReportsByDate(projectId, date);
     }
 
     // 6. 프로젝트 기여도 통계 조회
     @GetMapping("/stats")
-    public Map<String, Object> getProjectStats(@PathVariable Long projectId, @RequestParam(value = "period", defaultValue = "weekly") String period) {
+    public Map<String, Object> getProjectStats(
+            @AuthenticationPrincipal String userId,
+            @PathVariable Long projectId,
+            @RequestParam(value = "period", defaultValue = "weekly") String period) {
+
+        // [리포트 권한]
+        projectAccessService.validateReportAccess(projectId, userId);
+
         return dailyReportService.getProjectStats(projectId, period);
     }
 
     // 7. 리포트 수동 재생성
     @PostMapping("/daily-reports/{reportId}/regeneration")
-    public ResponseEntity<DailyReportResponseDTO> regenerateReport(@PathVariable Long reportId) {
+    public ResponseEntity<DailyReportResponseDTO> regenerateReport(
+            @AuthenticationPrincipal String userId,
+            @PathVariable Long projectId,
+            @PathVariable Long reportId) {
+
+        // [리포트 권한]
+        projectAccessService.validateReportAccess(projectId, userId);
+
         return ResponseEntity.ok(dailyReportService.regenerateReport(reportId));
     }
 
     // 8. AI 채팅 기록 조회
     @GetMapping("/daily-reports/{reportId}/chat-logs")
     public ResponseEntity<List<Map<String, Object>>> getChatLogs(
+            @AuthenticationPrincipal String userId,
+            @PathVariable Long projectId,
             @PathVariable Long reportId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
+
+        // [리포트 권한]
+        projectAccessService.validateReportAccess(projectId, userId);
+
         return ResponseEntity.ok(dailyReportService.getChatLogs(reportId, page, size));
     }
 
     // 9. AI 채팅 전송
     @PostMapping("/daily-reports/{reportId}/chat")
-    public ResponseEntity<Map<String, Object>> sendChat(@PathVariable Long reportId, @RequestBody Map<String, String> body) {
+    public ResponseEntity<Map<String, Object>> sendChat(
+            @AuthenticationPrincipal String userId,
+            @PathVariable Long projectId,
+            @PathVariable Long reportId,
+            @RequestBody Map<String, String> body) {
+
+        // [리포트 권한]
+        projectAccessService.validateReportAccess(projectId, userId);
+
         return ResponseEntity.ok(dailyReportService.sendChatToAI(reportId, body.get("message"), body.get("current_content")));
     }
 
     // 10. AI 제안 적용 로그 저장
     @PostMapping("/daily-reports/{reportId}/apply")
-    public ResponseEntity<String> applySuggestion(@PathVariable Long reportId, @RequestBody Map<String, Object> body) {
+    public ResponseEntity<String> applySuggestion(
+            @AuthenticationPrincipal String userId,
+            @PathVariable Long projectId,
+            @PathVariable Long reportId,
+            @RequestBody Map<String, Object> body) {
+
+        // [리포트 권한]
+        projectAccessService.validateReportAccess(projectId, userId);
+
         dailyReportService.saveSuggestionLog(reportId, (String) body.get("suggestion_content"), (Boolean) body.get("is_applied"));
         return ResponseEntity.ok("Applied log saved");
     }
 
     // 11. 리포트 설정 조회
     @GetMapping("/report-settings")
-    public ResponseEntity<Map<String, Object>> getReportSettings(@PathVariable Long projectId) {
+    public ResponseEntity<Map<String, Object>> getReportSettings(
+            @AuthenticationPrincipal String userId,
+            @PathVariable Long projectId) {
+
+        // [리포트 권한]
+        projectAccessService.validateReportAccess(projectId, userId);
+
         return ResponseEntity.ok(dailyReportService.getReportSettings(projectId));
     }
 
     // 12. 리포트 설정 변경
     @PutMapping("/report-settings")
-    public ResponseEntity<String> updateReportSettings(@PathVariable Long projectId, @RequestBody Map<String, Object> body) {
+    public ResponseEntity<String> updateReportSettings(
+            @AuthenticationPrincipal String userId,
+            @PathVariable Long projectId,
+            @RequestBody Map<String, Object> body) {
+
+        // [리포트 권한]
+        projectAccessService.validateReportAccess(projectId, userId);
+
         dailyReportService.updateReportSettings(projectId, body);
         return ResponseEntity.ok("Settings updated");
     }
@@ -157,6 +244,9 @@ public class ReportController {
             @AuthenticationPrincipal String userId,
             @PathVariable Long projectId,
             @RequestBody Map<String, Object> body) {
+
+        // [리포트 권한]
+        projectAccessService.validateReportAccess(projectId, userId);
 
         // 2. 리포트 타입 추출
         String reportType = (String) body.get("reportType");
@@ -184,6 +274,9 @@ public class ReportController {
             @AuthenticationPrincipal String userId,
             @PathVariable Long projectId) {
 
+        // [리포트 권한]
+        projectAccessService.validateReportAccess(projectId, userId);
+
         // 서비스 호출 (List 반환)
         List<FinalReportVO> reports = finalReportService.getMyFinalReports(projectId, userId);
 
@@ -194,9 +287,14 @@ public class ReportController {
     @PutMapping("/final-reports/{finalReportId}")
     public ResponseEntity<String> updateFinalReport(
             @AuthenticationPrincipal String userId,
+            @PathVariable Long projectId,
             @PathVariable Long finalReportId,
             @RequestBody Map<String, Object> body
     ){
+
+        // [리포트 권한]
+        projectAccessService.validateReportAccess(projectId, userId);
+
         // 데이터 추출
         Object titleObj = body.get("title");
         String title = titleObj != null ? titleObj.toString() : "";
@@ -215,6 +313,10 @@ public class ReportController {
             @PathVariable Long projectId,
             @RequestBody Map<String, Object> body
     ){
+
+        // [리포트 권한]
+        projectAccessService.validateReportAccess(projectId, userId);
+
         Object titleObj = body.get("title");
         String title = titleObj != null ? titleObj.toString() : "제목 없음";
 
@@ -241,7 +343,11 @@ public class ReportController {
     @DeleteMapping("/final-reports/{finalReportId}")
     public ResponseEntity<String> deleteFinalReport(
             @AuthenticationPrincipal String userId,
+            @PathVariable Long projectId,
             @PathVariable Long finalReportId) {
+
+        // [리포트 권한]
+        projectAccessService.validateReportAccess(projectId, userId);
 
         finalReportService.deleteFinalReport(finalReportId, userId);
 
@@ -251,9 +357,14 @@ public class ReportController {
     // 리포트 AI 채팅
     @PostMapping("/reports/chat")
     public ResponseEntity<Map<String, Object>> sendUnifiedChat(
+            @AuthenticationPrincipal String userId,
             @PathVariable Long projectId,
             @RequestBody Map<String, Object> body
     ){
+
+        // [리포트 권한]
+        projectAccessService.validateReportAccess(projectId, userId);
+
         String message = (String) body.get("message");
         String context =  (String) body.get("context");
         Boolean isSelection = (Boolean) body.get("isSelection");

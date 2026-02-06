@@ -2,6 +2,7 @@ package com.example.LlmSpring.controller;
 
 import com.example.LlmSpring.github.GithubBranchResponseDTO;
 import com.example.LlmSpring.github.GithubService;
+import com.example.LlmSpring.project.ProjectAccessService;
 import java.util.Collections;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,6 +20,7 @@ import java.util.Map;
 public class GithubController {
 
     private final GithubService githubService;
+    private final ProjectAccessService projectAccessService;
 
     @GetMapping("/{projectId}/getBranch")
     public ResponseEntity<?> getProjectBranch(
@@ -26,6 +28,9 @@ public class GithubController {
             @PathVariable Long projectId,
             @RequestParam(defaultValue = "1") int page)
     {
+
+        // [읽기 권한] DELETE 상태면 OWNER만 접근 가능
+        projectAccessService.validateReadAccess(projectId, userId);
 
         try{
             List<GithubBranchResponseDTO> branches = githubService.getProjectBranches(projectId, userId, page);
@@ -43,6 +48,9 @@ public class GithubController {
             @PathVariable Long projectId,
             @RequestParam("sha") String sha,
             @RequestParam(defaultValue = "1") int page){
+
+        // [읽기 권한]
+        projectAccessService.validateReadAccess(projectId, userId);
 
         try {
             List<Map<String, Object>> commits = githubService.getCommitsBySha(projectId, userId, sha, page);
@@ -78,6 +86,9 @@ public class GithubController {
             @PathVariable Long projectId,
             @RequestParam(value = "branch", required = false, defaultValue = "main") String branchName
     ) {
+        // [읽기 권한]
+        projectAccessService.validateReadAccess(projectId, userId);
+
         try {
             int commitCount = githubService.getTodayCommitCount(projectId, userId, branchName);
             return ResponseEntity.ok(Map.of("commitCount", commitCount));
@@ -96,6 +107,9 @@ public class GithubController {
             @RequestParam(value = "branch", required = false, defaultValue = "main") String branchName
     ) {
 
+        // [읽기 권한]
+        projectAccessService.validateReadAccess(projectId, userId);
+
         List<Map<String, Object>> commits = githubService.getRecentCommits(projectId, userId, branchName);
         return ResponseEntity.ok(commits);
     }
@@ -107,7 +121,11 @@ public class GithubController {
             @PathVariable Long projectId,
             @RequestParam(value = "branch", required = false, defaultValue = "main") String branchName
     ) {
-      List<Map<String, Object>> contribution = githubService.getMemberContribution(projectId, userId, branchName);
+
+        // [읽기 권한]
+        projectAccessService.validateReadAccess(projectId, userId);
+
+        List<Map<String, Object>> contribution = githubService.getMemberContribution(projectId, userId, branchName);
         return ResponseEntity.ok(contribution);
     }
 

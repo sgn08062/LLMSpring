@@ -16,7 +16,6 @@
         WHERE pm.user_id = #{userId}
           AND p.deleted_at IS NULL
           AND pm.deleted_at IS NULL
-          AND p.status = 'ACTIVE'
         ORDER BY pm.is_favorite DESC, p.name ASC
     </select>
 

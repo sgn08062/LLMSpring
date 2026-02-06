@@ -57,6 +57,9 @@ public class ProjectScheduler {
 
         // 3. 각 프로젝트의 멤버별로 리포트 생성 요청
         for(ProjectVO project: targetProjects){
+            if (project.getDeletedAt() != null && project.getStatus().equals("DONE")) {
+                continue;
+            }
             triggerReportForMembers(project);
         }
     }
@@ -69,6 +72,11 @@ public class ProjectScheduler {
         List<AlarmVO> alarmList = new ArrayList<>();
 
         for (ProjectVO project : dueProjects) {
+
+            if (project.getDeletedAt() != null) {
+                continue;
+            }
+
             List<String> memberIds = projectMapper.getActiveMemberIds(project.getProjectId());
 
             for (String memberId : memberIds) {
@@ -96,16 +104,24 @@ public class ProjectScheduler {
 
         // 2-1. 상태 업데이트 (ACTIVE -> DONE)
         List<Integer> projectIds = overdueProjects.stream()
+                .filter(p -> p.getDeletedAt() == null)
                 .map(ProjectVO::getProjectId)
                 .collect(Collectors.toList());
 
-        projectMapper.updateProjectsStatusToDone(projectIds);
-        log.info(">>> [Auto-Close] Closed {} projects: {}", projectIds.size(), projectIds);
+        if (!projectIds.isEmpty()) { // [추가] 빈 리스트 체크 (필터링 후 비어있을 수 있음)
+            projectMapper.updateProjectsStatusToDone(projectIds);
+            log.info(">>> [Auto-Close] Closed {} projects: {}", projectIds.size(), projectIds);
+        }
 
         // 2-2. 완료 알림 발송
         List<AlarmVO> alarmList = new ArrayList<>();
 
         for (ProjectVO project : overdueProjects) {
+
+            if (project.getDeletedAt() != null) {
+                continue;
+            }
+
             List<String> memberIds = projectMapper.getActiveMemberIds(project.getProjectId());
 
             for (String memberId : memberIds) {
