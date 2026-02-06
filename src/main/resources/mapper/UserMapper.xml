@@ -71,4 +71,15 @@
         ORDER BY name ASC
     </select>
 
+    <update id="updateRefreshToken">
+        UPDATE User
+        SET refresh_token = #{refreshToken}
+        WHERE user_id = #{userId}
+    </update>
+
+    <select id="getRefreshToken" resultType="String">
+        SELECT refresh_token
+        FROM User
+        WHERE user_id = #{userId}
+    </select>
 </mapper>

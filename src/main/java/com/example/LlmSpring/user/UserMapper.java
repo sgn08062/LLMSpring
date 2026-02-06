@@ -20,6 +20,10 @@ public interface UserMapper {
 
     void updateProfile(UserVO userVO);
 
+    void updateRefreshToken(@Param("userId") String userId, @Param("refreshToken") String refreshToken);
+
+    String getRefreshToken(String userId);
+
     /**
      * 키워드(ID 또는 이름)를 통한 유저 검색
      * @param keyword 검색어 (ID 또는 이름의 일부)

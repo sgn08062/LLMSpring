@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/auth")
 @CrossOrigin(origins = "*")
@@ -43,5 +45,18 @@ public class AuthController {
             case "FAIL_LOGIN" -> ResponseEntity.status(401).body(res);
             default -> ResponseEntity.status(400).body(res);
         };
+    }
+
+    // 토큰 재발급 API
+    @PostMapping("/reissue")
+    public ResponseEntity<?> reissue(@RequestBody Map<String, String> body){
+        String refreshToken = body.get("refresh_token");
+
+        String newAccessToken = authService.reissueAccessToken(refreshToken);
+        if (newAccessToken != null) {
+            return ResponseEntity.ok(Map.of("accessToken", newAccessToken));
+        }
+
+        return ResponseEntity.status(401).body("Invalid Refresh Token");
     }
 }

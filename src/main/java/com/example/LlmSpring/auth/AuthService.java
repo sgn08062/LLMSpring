@@ -44,21 +44,52 @@ public class AuthService {
         return SignUpResponseDTO.ok(user.getUserId(), user.getEmail());
     }
 
+    @Transactional
     public LogInResponseDTO login(LoginRequestDTO req){
         String userId = req.getUserId();
-        // 아이디가 없을 경우
+
+        // 아이디 존재 여부 확인
         if(!userMapper.existsByUserId(userId)){
             return LogInResponseDTO.fail();
         }
 
-        String hashPw = userMapper.getHashPw(req.getUserId());
+        String hashPw = userMapper.getHashPw(userId);
+
         if(BCrypt.checkpw(req.getPassword(), hashPw)){
             String userName = userMapper.getUserName(userId);
-            String token = jwtService.createToken(userId, userName);
-            return LogInResponseDTO.ok(userId, token);
-        }else{
+
+            // 1. 토큰 2종 생성
+            String accessToken = jwtService.createAccessToken(userId, userName);
+            String refreshToken = jwtService.createRefreshToken(userId);
+
+            // 2. Refresh Token DB에 저장 (기존에 있으면 업데이트)
+            userMapper.updateRefreshToken(userId, refreshToken);
+
+            // 3. 응답 (DTO도 수정 필요)
+            return LogInResponseDTO.ok(userId, accessToken, refreshToken);
+        } else {
             // 비밀번호 오류
             return LogInResponseDTO.fail();
         }
+    }
+
+    public String reissueAccessToken(String refreshToken) {
+        // 1. Refresh Token 유효성 및 만료 검사
+        String userId = jwtService.verifyTokenAndUserId(refreshToken);
+        if (userId == null) {
+            return null; // 토큰이 만료되었거나 유효하지 않음
+        }
+
+        // 2. DB에 저장된 Refresh Token 가져오기
+        String storedRefreshToken = userMapper.getRefreshToken(userId);
+
+        // 3. 클라이언트가 보낸 토큰과 DB 토큰이 일치하는지 확인
+        if (storedRefreshToken == null || !storedRefreshToken.equals(refreshToken)) {
+            return null;
+        }
+
+        // 4. 새로운 Access Token 발급
+        String userName = userMapper.getUserName(userId);
+        return jwtService.createAccessToken(userId, userName);
     }
 }

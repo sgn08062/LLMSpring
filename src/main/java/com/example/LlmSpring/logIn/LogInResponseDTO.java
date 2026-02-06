@@ -10,13 +10,27 @@ public class LogInResponseDTO {
     private String code;
     private String message;
     private String userId;
-    private String token;
+    private String accessToken;
+    private String refreshToken;
 
-    public static LogInResponseDTO ok(String userId, String token){
-        return new LogInResponseDTO(true,"SUCCESS_LOGIN",userId+"님 환영합니다!", userId, token);
+    public static LogInResponseDTO ok(String userId, String accessToken, String refreshToken){
+        return new LogInResponseDTO(
+                true,
+                "SUCCESS_LOGIN",
+                userId + "님 환영합니다!",
+                userId,
+                accessToken,
+                refreshToken
+        );
     }
-
     public static LogInResponseDTO fail(){
-        return new LogInResponseDTO(false, "FAIL_LOGIN", "아이디 또는 비밀번호가 틀렸습니다", null, null);
+        return new LogInResponseDTO(
+                false,
+                "FAIL_LOGIN",
+                "아이디 또는 비밀번호가 틀렸습니다",
+                null,
+                null,
+                null
+        );
     }
 }
