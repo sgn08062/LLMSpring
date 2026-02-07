@@ -170,21 +170,34 @@ public class ProjectServiceImpl implements ProjectService {
             return; // 그 외 상태는 알림 없음
         }
 
-        // 4. 알림 데이터 생성
-        List<AlarmVO> alarmList = new ArrayList<>();
+//        // 4. 알림 데이터 생성
+//        List<AlarmVO> alarmList = new ArrayList<>();
+//        for (String memberId : memberIds) {
+//            alarmList.add(AlarmVO.builder()
+//                    .userId(memberId)
+//                    .projectId(projectId)
+//                    .type(type)
+//                    .content(content)
+//                    .url("/projects/" + projectId) // 클릭 시 프로젝트 홈으로 이동
+//                    .build());
+//        }
+//
+//        // 5. 일괄 전송
+//        if (!alarmList.isEmpty()) {
+//            alarmMapper.insertAlarmsBatch(alarmList);
+//        }
+        // 4. [변경] 각 멤버별로 서비스 호출 (DB 저장 + SSE 전송)
         for (String memberId : memberIds) {
-            alarmList.add(AlarmVO.builder()
+            AlarmVO alarm = AlarmVO.builder()
                     .userId(memberId)
                     .projectId(projectId)
                     .type(type)
                     .content(content)
                     .url("/projects/" + projectId) // 클릭 시 프로젝트 홈으로 이동
-                    .build());
-        }
+                    .build();
 
-        // 5. 일괄 전송
-        if (!alarmList.isEmpty()) {
-            alarmMapper.insertAlarmsBatch(alarmList);
+            // ★ 핵심 변경: Service를 통해 생성해야 실시간 알림이 갑니다.
+            alarmService.createAlarm(alarm);
         }
     }
 
@@ -225,18 +238,31 @@ public class ProjectServiceImpl implements ProjectService {
         // 보관 기간을 30일로 가정했을 때의 안내 문구
         String message = "⚠️ 프로젝트 '" + project.getName() + "'가 삭제 대기 상태로 변경되었습니다. 7일 후 영구 삭제됩니다.";
 
+//        for (String memberId : memberIds) {
+//            alarmList.add(AlarmVO.builder()
+//                    .userId(memberId)
+//                    .projectId(projectId)
+//                    .type("PROJECT_DELETED") // 삭제 알림 타입
+//                    .content(message)
+//                    .url("/projects") // 프로젝트가 삭제됐으니 대시보드가 아닌 목록으로 이동
+//                    .build());
+//        }
+//
+//        if (!alarmList.isEmpty()) {
+//            alarmMapper.insertAlarmsBatch(alarmList);
+//        }
+        // [변경] 각 멤버별로 서비스 호출
         for (String memberId : memberIds) {
-            alarmList.add(AlarmVO.builder()
+            AlarmVO alarm = AlarmVO.builder()
                     .userId(memberId)
                     .projectId(projectId)
                     .type("PROJECT_DELETED") // 삭제 알림 타입
                     .content(message)
                     .url("/projects") // 프로젝트가 삭제됐으니 대시보드가 아닌 목록으로 이동
-                    .build());
-        }
+                    .build();
 
-        if (!alarmList.isEmpty()) {
-            alarmMapper.insertAlarmsBatch(alarmList);
+            // ★ Service 호출
+            alarmService.createAlarm(alarm);
         }
     }
 
@@ -349,18 +375,31 @@ public class ProjectServiceImpl implements ProjectService {
         List<AlarmVO> alarmList = new ArrayList<>();
         String message = "♻️ 프로젝트 '" + project.getName() + "'의 삭제 요청이 취소되어 정상적으로 복구되었습니다.";
 
+//        for (String memberId : memberIds) {
+//            alarmList.add(AlarmVO.builder()
+//                    .userId(memberId)
+//                    .projectId(projectId)
+//                    .type("PROJECT_RESTORED") // 복구 알림 타입
+//                    .content(message)
+//                    .url("/projects/" + projectId) // 다시 대시보드로 이동 가능
+//                    .build());
+//        }
+//
+//        if (!alarmList.isEmpty()) {
+//            alarmMapper.insertAlarmsBatch(alarmList);
+//        }
+        // [변경] 각 멤버별로 서비스 호출
         for (String memberId : memberIds) {
-            alarmList.add(AlarmVO.builder()
+            AlarmVO alarm = AlarmVO.builder()
                     .userId(memberId)
                     .projectId(projectId)
                     .type("PROJECT_RESTORED") // 복구 알림 타입
                     .content(message)
                     .url("/projects/" + projectId) // 다시 대시보드로 이동 가능
-                    .build());
-        }
+                    .build();
 
-        if (!alarmList.isEmpty()) {
-            alarmMapper.insertAlarmsBatch(alarmList);
+            // ★ Service 호출
+            alarmService.createAlarm(alarm);
         }
     }
 
