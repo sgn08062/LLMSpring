@@ -292,10 +292,27 @@ public class DailyReportService {
         try {
             log.info(">>> [Async Start] Generating report for User: {} in Project: {}", userId, projectId);
 
-            // 1. 리포트 생성
-            getOrCreateTodayReport(projectId, userId);
+            DailyReportResponseDTO reportDTO = getOrCreateTodayReport(projectId, userId);
 
-            // 2. 알림 발송
+            String todayStr = LocalDate.now().toString();
+            GeneratedContent generated = getGeneratedContent(projectId, userId, todayStr);
+
+            String summary = "";
+            if (generated.content != null) {
+                summary = generated.content.lines()
+                        .limit(3)
+                        .collect(Collectors.joining("\n"));
+            }
+
+            updateReport(
+                    reportDTO.getReportId(),
+                    generated.content,
+                    reportDTO.getTitle(),
+                    summary,
+                    generated.commitCount
+            );
+
+            // 알림 발송
             // 프로젝트 이름 조회
             ProjectVO project = projectMapper.selectProjectById(projectId);
             String projectName = (project != null) ? project.getName() : "프로젝트";
@@ -477,32 +494,48 @@ public class DailyReportService {
 
         String prompt = """
             ## Role
-            당신은 개발 팀의 일일 스크럼 마스터입니다.
-            제공된 'Git 커밋 데이터(commits)'와 '완료된 업무 데이터(tasks)'를 종합하여 '오늘의 업무 리포트'를 작성하세요.
-
+            당신은 소프트웨어 개발 프로젝트의 변경 사항을 문서화하고 팀의 진척도를 관리하는 전문 테크니컬 라이터 겸 스크럼 마스터입니다.
+            제공된 'Git 커밋 데이터(commits)'와 '완료된 업무 데이터(tasks)'를 분석하여 팀 공유용 일일 업무 리포트를 작성하십시오.
+        
             ## Constraints
-            1. **파일 경로(`src/main/...`)를 절대 나열하지 마십시오.**
-            2. 커밋 메시지와 업무 제목을 분석하여 **'어떤 기능을 구현했는지'** 자연스러운 문장으로 서술하십시오.
-            3. 기술적 세부 사항보다는 **비즈니스 기능(Feature) 중심**으로 요약하십시오.
-            4. 같은 브랜치나 같은 업무 맥락은 하나로 묶어서 요약하십시오.
-
-            ## Output Format (Markdown)
-            
-            # 📅 금일 업무 요약
-            (전체 작업을 3줄 이내로 핵심 요약)
-
-            # 🚀 상세 구현 사항
-            ## [브랜치명 또는 주요 기능명]
-            - **기능 구현**: (커밋/업무 내용을 기반으로 한글 요약)
-            - **상세 내용**: (구현된 로직 설명)
-
-            # ✅ 금일 업무 현황 (Task)
-            (tasks 데이터를 바탕으로 아래와 같이 리스트 출력. tasks 데이터가 없으면 '해당 없음' 표시)
-            - **[업무 상태]** 업무 제목
-              (예: - **[DONE]** 로그인 페이지 퍼블리싱)
-
+            1. **Tone**: 건조하고 전문적인 문체를 사용하십시오. (해요체 금지, '하십시오체' 또는 명사형 종결 사용)
+            2. **Format**: Markdown 형식을 엄수하십시오.
+            3. **No File Paths**: 'src/main/...'와 같은 구체적인 파일 경로는 절대 나열하지 마십시오.
+            4. **Feature-oriented**: 단순 코드 수정을 넘어 '어떤 비즈니스 기능(Feature)을 구현/개선했는지'를 중심으로 자연스러운 문장으로 서술하십시오.
+            5. **Grouping**: 반드시 '브랜치(Branch)'를 기준으로 커밋 내용을 그룹화하여 작성하십시오.
+            6. **Fact-based**: 제공된 데이터에 없는 내용을 추론하거나 꾸며내지 마십시오.
+        
+            ## Output Structure (Markdown)
+        
+            # 📅 금일 업무 요약 (Executive Summary)
+            - **반드시 "금일 작업 내용은..."으로 시작하십시오.**
+            - 전체 작업을 비즈니스 관점에서 3줄 이내로 핵심 요약하십시오.
+        
+            ---
+        
+            ### 1. 🕒 커밋 타임라인
+            - 전체 커밋을 시간순으로 나열한 요약 그래프입니다.
+            - 포맷: `YYYY-MM-DD HH:mm` | `[BranchName]` | `커밋 메시지`
+        
+            ---
+        
+            ### 2. 🚀 브랜치별 상세 구현 사항
+            작업된 브랜치 별로 섹션을 나누어 상세 내용을 기술하십시오.
+        
+            #### 📂 [브랜치 이름 또는 주요 기능명]
+            - **[Commit Hash 7자리] 커밋 메시지**
+              - **기능 구현**: 커밋 및 업무 내용을 기반으로 구현된 핵심 비즈니스 로직 한글 요약
+              - **상세 내용**: 수정/추가된 로직의 목적과 변경점 설명 (파일 경로 제외)
+        
+            ---
+        
+            ### 3. ✅ 금일 업무 현황 (Task Status)
+            - 제공된 `tasks` 데이터를 바탕으로 아래와 같이 리스트를 출력하십시오.
+            - 데이터가 없으면 '해당 없음'으로 표시하십시오.
+            - 포맷: - **[업무 상태]** 업무 제목 (예: - **[DONE]** 로그인 API 예외 처리 로직 강화)
+        
             ## Input Data (JSON)
-            """ + jsonInput;
+        """ + jsonInput;
 
         Map<String, Object> requestBody = new HashMap<>();
         Map<String, Object> content = new HashMap<>();
