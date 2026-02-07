@@ -2,12 +2,14 @@ package com.example.LlmSpring.controller;
 
 import com.example.LlmSpring.issue.chat.IssueChatService;
 import com.example.LlmSpring.issue.chat.IssueChatVO;
+import com.example.LlmSpring.project.ProjectAccessService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -20,6 +22,7 @@ public class IssueChatController {
 
     private final SimpMessagingTemplate messagingTemplate;
     private final IssueChatService chatService;
+    private final ProjectAccessService projectAccessService;
 
     // -------------------------------------------------------------
     // 1. WebSocket 메시지 처리
@@ -50,8 +53,14 @@ public class IssueChatController {
 
     // 프로젝트 URL 구조에 맞춤: GET /api/projects/{projectId}/issues/{issueId}/chats
     @GetMapping("/api/projects/{projectId}/issues/{issueId}/chats")
-    public List<IssueChatVO> getChatHistory(@PathVariable Integer projectId,
-                                            @PathVariable Integer issueId) {
+    public List<IssueChatVO> getChatHistory(
+            @AuthenticationPrincipal String userId,
+            @PathVariable Integer projectId,
+            @PathVariable Integer issueId) {
+
+        // [읽기 권한] DELETE 상태면 OWNER만 접근 가능
+        projectAccessService.validateReadAccess((long) projectId, userId);
+
         return chatService.getChatHistory(issueId);
     }
 }

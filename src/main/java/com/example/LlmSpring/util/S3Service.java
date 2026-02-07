@@ -1,9 +1,12 @@
 package com.example.LlmSpring.util;
 
+import com.example.LlmSpring.project.ProjectMapper;
+import com.example.LlmSpring.project.ProjectVO;
 import io.awspring.cloud.s3.S3Template;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -12,6 +15,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
+import org.springframework.web.server.ResponseStatusException;
 
 @Slf4j
 @Service
@@ -38,6 +42,7 @@ public class S3Service {
 
     //  텍스트 내용을 S3에 파일로 저장하고 URL 반환
     public String uploadTextContent(String path, String content) {
+
         // String을 InputStream으로 변환
         byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
         InputStream inputStream = new ByteArrayInputStream(contentBytes);

@@ -5,6 +5,7 @@ import com.example.LlmSpring.issue.request.IssueAssigneeRequestDTO;
 import com.example.LlmSpring.issue.request.IssueCreateRequestDTO;
 import com.example.LlmSpring.issue.request.IssueUpdateRequestDTO;
 import com.example.LlmSpring.issue.response.IssueDetailResponseDTO;
+import com.example.LlmSpring.project.ProjectAccessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,8 @@ import org.springframework.web.bind.annotation.*;
 public class IssueController {
 
     private final IssueService issueService;
+    private final ProjectAccessService projectAccessService;
+
     /**
      * [이슈 생성 API]
      * POST /api/projects/{projectId}/issues
@@ -27,13 +30,14 @@ public class IssueController {
             @PathVariable("projectId") int projectId,
             @RequestBody IssueCreateRequestDTO dto) {
 
+        // [쓰기 권한] DONE 또는 DELETE 상태면 접근 불가
+        projectAccessService.validateWriteAccess((long) projectId, userId);
+
         try {
-            // 2. 이슈 생성 로직 호출
             int issueId = issueService.createIssue(projectId, userId, dto);
             return ResponseEntity.status(HttpStatus.CREATED).body(issueId);
         } catch (RuntimeException e) {
-            // 권한 부족, 우선순위 오류 등 예외 처리
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 
@@ -47,14 +51,13 @@ public class IssueController {
             @PathVariable("projectId") int projectId,
             @PathVariable("issueId") int issueId) {
 
-
+        // [쓰기 권한] DONE 또는 DELETE 상태면 접근 불가
+        projectAccessService.validateWriteAccess((long) projectId, userId);
 
         try {
-            // 2. 아카이브 로직 호출
             issueService.archiveIssue(projectId, issueId, userId);
             return ResponseEntity.ok("이슈가 성공적으로 아카이브되었습니다.");
         } catch (RuntimeException e) {
-            // 권한 부족, 데이터 불일치 등 예외 메시지 반환
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
@@ -69,6 +72,9 @@ public class IssueController {
             @PathVariable("projectId") int projectId,
             @PathVariable("issueId") int issueId,
             @RequestBody IssueAssigneeRequestDTO dto) {
+
+        // [쓰기 권한] DONE 또는 DELETE 상태면 접근 불가
+        projectAccessService.validateWriteAccess((long) projectId, requesterId);
 
         try {
             issueService.addAssignee(projectId, issueId, requesterId, dto.getUserId());
@@ -89,6 +95,9 @@ public class IssueController {
             @PathVariable("issueId") int issueId,
             @PathVariable("userId") String targetUserId) {
 
+        // [쓰기 권한] DONE 또는 DELETE 상태면 접근 불가
+        projectAccessService.validateWriteAccess((long) projectId, requesterId);
+
         try {
             issueService.removeAssignee(projectId, issueId, requesterId, targetUserId);
             return ResponseEntity.ok("담당자가 성공적으로 제거되었습니다.");
@@ -107,6 +116,9 @@ public class IssueController {
             @PathVariable("projectId") int projectId,
             @PathVariable("issueId") int issueId,
             @RequestBody IssueUpdateRequestDTO dto) {
+
+        // [쓰기 권한] DONE 또는 DELETE 상태면 접근 불가
+        projectAccessService.validateWriteAccess((long) projectId, userId);
 
         try {
             issueService.updateIssue(projectId, issueId, userId, dto);
@@ -133,6 +145,9 @@ public class IssueController {
                                   @RequestParam(defaultValue = "createdAt_desc") String sort) {
 
 
+        // [읽기 권한] DELETE 상태면 OWNER만 접근 가능
+        projectAccessService.validateReadAccess((long) projectId, uid);
+
         return ResponseEntity.ok(issueService.getIssueList(
                 projectId, uid, status, priority, assigneeId,
                 createdStart, createdEnd, dueStart, dueEnd, sort
@@ -148,6 +163,9 @@ public class IssueController {
             @AuthenticationPrincipal String userId,
             @PathVariable("projectId") int projectId,
             @PathVariable("issueId") int issueId) {
+
+        // [읽기 권한] DELETE 상태면 OWNER만 접근 가능
+        projectAccessService.validateReadAccess((long) projectId, userId);
 
         try {
             IssueDetailResponseDTO response = issueService.getIssueDetail(projectId, issueId, userId);

@@ -1,5 +1,6 @@
 package com.example.LlmSpring.controller;
 
+import com.example.LlmSpring.project.ProjectAccessService;
 import com.example.LlmSpring.projectMember.ProjectMemberService;
 import com.example.LlmSpring.projectMember.request.ProjectMemberInviteRequestDTO;
 import com.example.LlmSpring.projectMember.request.ProjectMemberRemoveRequestDTO;
@@ -20,6 +21,7 @@ import java.util.List;
 public class ProjectMemberController {
 
     private final ProjectMemberService projectMemberService;
+    private final ProjectAccessService projectAccessService;
 
     /**
      * [프로젝트 참여 멤버 목록 조회 API]
@@ -29,6 +31,9 @@ public class ProjectMemberController {
     public ResponseEntity<?> getProjectMembers(
             @AuthenticationPrincipal String userId,
             @PathVariable("projectId") int projectId) {
+
+        // [읽기 권한] DELETE 상태면 OWNER만 접근 가능
+        projectAccessService.validateReadAccess((long) projectId, userId);
 
         try {
             // 3. 서비스 호출
@@ -59,6 +64,9 @@ public class ProjectMemberController {
             @PathVariable("projectId") int projectId,
             @RequestBody ProjectMemberInviteRequestDTO dto) {
 
+        // [관리 권한] OWNER만 가능 + DONE/DELETE 상태 시 차단 (멤버 동결)
+        projectAccessService.validateMemberManageAccess((long) projectId, inviterId);
+
         try {
             // 3. 서비스 호출
             projectMemberService.inviteMember(projectId, inviterId, dto);
@@ -79,6 +87,9 @@ public class ProjectMemberController {
             @PathVariable("projectId") int projectId,
             @RequestBody ProjectMemberRoleRequestDTO dto) {
 
+        // [관리 권한] OWNER만 가능 + DONE/DELETE 상태 시 차단
+        projectAccessService.validateMemberManageAccess((long) projectId, requesterId);
+
         try {
             // 2. 서비스 호출
             projectMemberService.updateMemberRole(projectId, requesterId, dto);
@@ -96,6 +107,9 @@ public class ProjectMemberController {
             @AuthenticationPrincipal String userId,
             @PathVariable("projectId") int projectId,
             @RequestBody ProjectMemberRemoveRequestDTO dto) {
+
+        // [관리 권한] OWNER만 가능 + DONE/DELETE 상태 시 차단 (멤버 동결)
+        projectAccessService.validateMemberManageAccess((long) projectId, userId);
 
         try {
             // 2. 서비스 호출
@@ -148,6 +162,10 @@ public class ProjectMemberController {
     public ResponseEntity<?> getIssueAssigneeMembers(
             @AuthenticationPrincipal String userId,
             @PathVariable("projectId") int projectId) {
+
+        // [읽기 권한] DELETE 상태면 OWNER만 접근 가능
+        projectAccessService.validateReadAccess((long) projectId, userId);
+
         // 서비스 호출
         List<ProjectMemberResponseDTO> members = projectMemberService.getIssueAssigneeMemberList(projectId, userId);
 

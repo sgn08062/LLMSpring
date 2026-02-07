@@ -1,5 +1,6 @@
 package com.example.LlmSpring.controller;
 
+import com.example.LlmSpring.project.ProjectAccessService;
 import com.example.LlmSpring.project.request.ProjectCreateRequestDTO;
 import com.example.LlmSpring.project.ProjectService;
 import com.example.LlmSpring.project.request.ProjectStatusRequestDTO;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 public class ProjectController {
 
     private final ProjectService projectService;
+    private final ProjectAccessService projectAccessService;
 
     /**
      * [프로젝트 생성 API]
@@ -46,8 +48,11 @@ public class ProjectController {
     @PutMapping("/{projectId}")
     public ResponseEntity<String> updateProject(
             @AuthenticationPrincipal String userId,
-            @PathVariable("projectId") int projectId,
+            @PathVariable int projectId,
             @RequestBody ProjectUpdateRequestDTO dto) {
+
+        // [관리 권한] OWNER만 가능 + DONE/DELETE 상태 시 차단
+        projectAccessService.validateMemberManageAccess((long) projectId, userId);
 
         try {
             int result = projectService.updateProject(projectId, userId, dto);
@@ -72,6 +77,10 @@ public class ProjectController {
             @PathVariable("projectId") int projectId,
             @RequestBody ProjectStatusRequestDTO dto) {
 
+        // [읽기 권한] DELETE 상태면 OWNER만 접근 가능 (DONE 상태에서도 접근 가능해야 함)
+        // * 실제 상태 변경 권한(OWNER 여부)은 Service 내부에서 체크해야 합니다.
+        projectAccessService.validateReadAccess((long) projectId, userId);
+
         try {
             int result = projectService.updateProjectStatus(projectId, userId, dto.getStatus());
             if (result == 1) {
@@ -95,6 +104,10 @@ public class ProjectController {
     public ResponseEntity<String> deleteProject(
             @AuthenticationPrincipal String userId,
             @PathVariable("projectId") int projectId) {
+
+        // [관리 권한] OWNER만 가능 + DONE/DELETE 상태 시 차단
+        // (이미 삭제된 프로젝트를 또 삭제하거나, 완료된 프로젝트를 바로 삭제하는 것 방지)
+        projectAccessService.validateMemberManageAccess((long) projectId, userId);
 
         try {
             int result = projectService.deleteProject(projectId, userId);
@@ -158,6 +171,10 @@ public class ProjectController {
             @AuthenticationPrincipal String userId, // [변경]
             @PathVariable("projectId") int projectId) {
 
+
+        // [읽기 권한] DELETE 상태여도 OWNER는 접근 허용 (그래야 복구 가능)
+        projectAccessService.validateReadAccess((long) projectId, userId);
+
         try {
             int result = projectService.restoreProject(projectId, userId);
 
@@ -179,6 +196,9 @@ public class ProjectController {
     public ResponseEntity<ProjectDashboardResponseDTO> getProjectDashboard(
             @AuthenticationPrincipal String userId, // [변경]
             @PathVariable("projectId") Long projectId) {
+
+        // [읽기 권한]
+        projectAccessService.validateReadAccess(projectId, userId);
 
         ProjectDashboardResponseDTO stats = projectService.getProjectDashboardStats(projectId, userId);
         return ResponseEntity.ok(stats);
