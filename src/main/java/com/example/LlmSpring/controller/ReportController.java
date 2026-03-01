@@ -69,6 +69,7 @@ public class ReportController {
     }
 
     // 3. 리포트 수정 (임시 저장)
+    @PutMapping("/daily-reports/{reportId}")
     public ResponseEntity<String> updateReport(
             @AuthenticationPrincipal String userId,
             @PathVariable Long projectId,
@@ -128,6 +129,7 @@ public class ReportController {
     }
 
     // 4. 리포트 발행 (완료 처리)
+    @PostMapping("/daily-reports/{reportId}/publish")
     public ResponseEntity<String> publishReport(
             @AuthenticationPrincipal String userId,
             @PathVariable Long projectId,
